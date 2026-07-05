@@ -30,9 +30,9 @@ async def update_job_status(
         #Main logic
         if not error_code:
             query = f"UPDATE BuildState SET status=? WHERE job_uuid IN ({placeholders})"
-            await db.execute(query, (status, tuple(job_uuids)))
+            await db.execute(query, (status, *job_uuids))
         if error_code:
             query = f"UPDATE BuildState SET status=?, error=? WHERE job_uuid IN ({placeholders})"
-            await db.execute(query, (status, error_code, tuple(job_uuids)))
+            await db.execute(query, (status, error_code, *job_uuids))
 
         await db.commit()
