@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 
 load_dotenv("/home/vire/vire/.env")
 
-from resolve_worker_state import update_job_state
+from resolve_worker_state import fetch_job_status, update_job_state
 from cli_parser import load_parser
 from core.cleanup_container import remove_container
 from core.create_container_job import container_create
@@ -37,19 +37,30 @@ def complete_final_tasks():
     def stream_file():
         try:
             assert state.job_uuid is not None
-            stream, stat = client.api.get_archive(state.job_uuid, output_path)
-
             worker_output_dir = os.getenv("WORKER_OUTPUT_DIR")
             assert worker_output_dir is not None
+            assert state.user_uuid is not None
 
+            stream, stat = client.api.get_archive(state.job_uuid, output_path)
+
+            if fetch_job_status(job_uuid=state.job_uuid, user_uuid=state.user_uuid) == "cancelled":
+                return
             path_to_tar = os.path.join(worker_output_dir, f"{state.job_uuid}.tar")
             with open(path_to_tar, "wb") as tar_file:
                 for chunk in stream:
                     tar_file.write(chunk)
+            update_job_state(state.job_uuid, "finished", "running")
 
         except NotFound:
+            assert state.user_uuid is not None
+            assert state.job_uuid is not None
+
+            status = fetch_job_status(job_uuid=state.job_uuid, user_uuid=state.user_uuid)
+            cfn_log("info", status)
+            if status == "cancelled":
+                return
             cfn_log(
-                "critical", "The output_path (%s) given for job '%s' doesn't exist inside the container.",
+                "info", "The output_path (%s) given for job '%s' doesn't exist inside the container.",
                 output_dir, state.job_uuid,
             )
             publish_log_redis(dedent(
@@ -76,7 +87,6 @@ def complete_final_tasks():
         output_dir = state.OUTPUT_DIR
         output_path = os.path.join("/workspace", f"{state.repo_name}", output_dir)
         stream_file()
-        update_job_state(state.job_uuid, "finished", "running")
     except Exception as e:
         assert state.job_uuid is not None
         cfn_log("critical", "Finally block function caught 'Exception'. %s", e)

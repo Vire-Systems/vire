@@ -11,7 +11,7 @@ import json
 
 import utils.state as state
 
-from BuildScheduler.worker.schema.errors import CredentialError
+from schema.errors import CredentialError
 
 
 def load_parser():

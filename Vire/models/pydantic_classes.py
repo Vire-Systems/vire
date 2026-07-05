@@ -2,7 +2,7 @@ from pydantic import BaseModel
 
 class BuildRequestModel(BaseModel):
     """
-    A data model for POST /build_request API using pydantic's BaseModel for data validation.
+    A data model for POST /build/build_request API using pydantic's BaseModel for data validation.
     
     Attributes - 
         user_uuid,
@@ -17,3 +17,7 @@ class BuildRequestModel(BaseModel):
     remote_user: str
     remote_reponame: str
     branch: str
+
+class BuildCancelModel(BaseModel):
+    job_uuids: list[str]
+    user_uuid: str

@@ -1,7 +1,7 @@
 import sqlite3
 from contextlib import contextmanager
 from typing import Literal
-from BuildScheduler.worker.utils.vire_logger import cfn_log
+from utils.vire_logger import cfn_log
 from utils.state import db_file
 
 assert db_file is not None, "SQLite database filepath cannot be empty."
@@ -34,11 +34,13 @@ def fetch_job_status(job_uuid: str, user_uuid: str)-> str:
     with db_session(db_file) as conn:
         cursor = conn.cursor()
         query = """
-            SELECT job_uuid FROM BuildState
+            SELECT status FROM BuildState
             WHERE job_uuid=? AND user_uuid=?
             """
-        result: str = cursor.execute(query).fetchone()
-        return result
+        result: tuple[str] = cursor.execute(query, (job_uuid, user_uuid)).fetchone()
+        if len(result) == 1:
+            return result[0]
+        cfn_log("warn", "[fetch_job_status] returned a result of length %i. Only 1 is acceptable.", len(result))
 
 def update_job_state(
     job_uuid: str,

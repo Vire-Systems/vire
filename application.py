@@ -10,10 +10,13 @@ from fastapi import FastAPI
 from BuildScheduler.Scheduler.db.sqlite_orm.models import init_db
 from BuildScheduler.Scheduler.scheduler_loop import scheduler_loop
 from BuildScheduler.shared.scheduler_logger import vire_logger
-from Vire.api.routers import testrouter, build_req
+from BuildScheduler.shared.shared_state import core_id
+
 from Vire.utils import async_requests
 from BuildScheduler.shared.pub_redis import r
 
+from Vire.api.routers import testrouter
+from Vire.api.routers.build import( build_req, cancel_build )
 
 @asynccontextmanager
 async def lifespan(app:FastAPI):
@@ -39,9 +42,17 @@ async def lifespan(app:FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-app.include_router(testrouter.router)
-app.include_router(build_req.router)
+routers = [
+    testrouter.router,
+    build_req.router,
+    cancel_build.router
+]
 
-@app.get("/api")
+for router in routers:
+    app.include_router(router, prefix=f"/{core_id}/api/v1")
+
+
+# Status
+@app.get(f"/{core_id}/api/status")
 async def api_status():
-    return {"status":"online"}
+    return {"online": True}

@@ -17,3 +17,11 @@ valid_lockfiles = ["pnpm-lock.yaml","yarn.lock","bun.lock", "bun.lockb","package
 # Core instance identity. TODO: Change this to a public key / core uuid
 core_id = os.getenv("CORE_ID")
 assert core_id is not None
+
+
+# Cancellable state
+cancellable_builds_str = os.getenv("CANCELLABLE")
+
+assert cancellable_builds_str is not None, "Cannot fetch cancellable build states"
+cancellable_build_states: set[str] = set(cancellable_builds_str.strip().split(','))
+print(cancellable_build_states)

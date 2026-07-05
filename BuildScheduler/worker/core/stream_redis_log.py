@@ -5,8 +5,6 @@ from utils.vire_logger import cfn_log
 from resolve_worker_state import fetch_job_status
 
 assert state.redis_url is not None
-assert state.job_uuid is not None
-assert state.user_uuid is not None
 
 r = from_url(state.redis_url)
 client = state.client
