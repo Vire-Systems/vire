@@ -9,18 +9,13 @@ from BuildScheduler.Scheduler.db.sqlite_orm.models import BuildData, BuildState
 from BuildScheduler.Scheduler.db.sqlite_orm.db import async_session
 from BuildScheduler.Scheduler.utils.queues_locks import db_build_queue, queue_insert_lock
 
-
 async def fetch_build_data(job_uuid: str)-> WorkerCreationParams | None:
     """
     Fetches full details of a build based on job_uuid.
 
-    Returns - tuple[
-        job_uuid: str, user_uuid: str,
-        remote_link: str, commit_id: str,
-        provider: str, remote_user: str,
-        remote_reponame: str, branch: str
-    ]
-        If the provided job_uuid exists. Else it returns 'None'.
+    Returns - 
+        WorkerCreationParams if job_uuid is valid
+        Else it returns 'None'.
     """
     async with async_session() as session:
         query = select(BuildData).where(BuildData.job_uuid == job_uuid)
@@ -42,7 +37,7 @@ async def fetch_build_data(job_uuid: str)-> WorkerCreationParams | None:
         else:
             return None
 
-async def fetch_queued_builds(number_of_builds: int)-> None:
+async def load_queued_builds(number_of_builds: int)-> None:
     """
     crud's read function for fetching builds where the build status is 'queued'.
 

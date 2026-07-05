@@ -15,7 +15,7 @@ async def scheduler_loop():
         while True:
             worker_count = await get_worker_count()
             available_slots = state.MAX_BUILDS_NUMBER - worker_count
-            await read.fetch_queued_builds(available_slots)
+            await read.load_queued_builds(available_slots)
             _ = asyncio.create_task(dispatch_queued_job(available_slots))
 
             await asyncio.sleep(30)
