@@ -24,4 +24,3 @@ cancellable_builds_str = os.getenv("CANCELLABLE")
 
 assert cancellable_builds_str is not None, "Cannot fetch cancellable build states"
 cancellable_build_states: set[str] = set(cancellable_builds_str.strip().split(','))
-print(cancellable_build_states)
