@@ -37,7 +37,7 @@ async def fetch_vire_toml(
         if not branch:
             raise errors.InvalidBranchError
 
-        toml_raw_url = adapter.get_raw_url(remote_user, remote_reponame, branch, "vire.toml")
+        toml_raw_url = adapter.get_raw_url(remote_user, remote_reponame, branch, ".vire/vire.toml")
         body = await send_request(toml_raw_url)
         toml_b:bytes = body.content
         toml_str = toml_b.decode(encoding="utf-8")
