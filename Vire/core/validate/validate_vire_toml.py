@@ -37,7 +37,7 @@ async def validate_vire_toml(TVP: TOMLValidationParams, VC: ValidatorContext, PT
     except config_errors.UnsupportedFrameworkError as e:
         await publish_job_log(dedent(
             f"""
-            Error: VC-VD-001. Unable to validate vire.toml.
+            Error: VC-VD-021. Unable to validate vire.toml.
             Timestamp: {TVP.ts}
 
             Details:
