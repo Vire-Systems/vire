@@ -74,7 +74,7 @@ async def validate_toml(lockfile_name: str | None, package_manager: str, output_
                 f"The lockfile ('{lockfile_name}') fetched by Vire does not match the Lockfile associated with the package manager ('{package_manager}') provided in your vire.toml."
             )
 
-    allowed = re.fullmatch(r"[a-zA-Z0-9_]+", output_dir)
+    allowed = re.fullmatch(r"[a-zA-Z0-9_]+$", output_dir)
     if not allowed:
         raise config_errors.InvalidOutDir(
             f"The output directory ({output_dir}) is not allowed. Only alphanumeric and underscore characters are allowed."
