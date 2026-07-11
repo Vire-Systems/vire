@@ -14,3 +14,8 @@ class FrameworkAdapter:
     image: str
     install_command: dict[str,str]
     build_command: dict[str,str]
+
+@dataclass(frozen=True, slots=True)
+class WorkerContext:
+    """Context required for worker"""
+    

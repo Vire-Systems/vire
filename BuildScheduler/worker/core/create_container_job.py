@@ -8,11 +8,12 @@ Functions -
 """
 
 import asyncio
-import time
 
 from core.stream_redis_log import publish_log_redis, stream_logs
 from schema.errors import ContainerCreationFail, InstallReqMismatch, UnsupportedFramework
 from utils import state
+from utils.container_runtimes.runtime_registry import RUNTIME_REGISTRY
+from schema.base_runtime import ContainerRuntime
 from utils.adapter import FRAMEWORK_REGISTRY
 from utils.vire_logger import cfn_log
 
@@ -62,45 +63,6 @@ def setup_creation(repo_name: str, framework: str, package_manager: str) -> tupl
         cfn_log("critical", "[worker setup_creation] Unable to initialize setup. Details: %s", e)
         raise e
 
-
-# Helper called by 'container_create'.
-def sync_docker_run(job_uuid: str) -> None:
-    """
-    Run a docker container synchronously.
-
-    Args:
-        job_uuid - Job UUID of the container job. Also used as container name.
-
-    Raises 'worker.schema.errors.ContainerCreationFail' if container fails to spin up.
-    """
-
-    try:
-        client = state.client
-        expires_at = int(time.time() + state.CONTAINER_EXPIRY)
-        if (state.repo_name is None) or (state.framework is None) or (state.package_manager is None):
-            return
-        image, cmd_body = setup_creation(state.repo_name, state.framework, state.package_manager)
-
-        if not image or not cmd_body:
-            raise ContainerCreationFail(f"{'Image' if not image else 'cmd'} Cannot be none.")
-        cmd = ["sh", "-c", cmd_body]
-        client.containers.run(
-            name=job_uuid,
-            image=image,
-            command=cmd,
-            mem_limit="400m",
-            cpu_quota=50000,
-            cpu_period=100000,
-            detach=True,
-            labels={"managed_by": "build_scheduler", "expires_at": str(expires_at)},
-        )
-    except InstallReqMismatch as e:
-        raise ContainerCreationFail(str(e))
-    except Exception as e:
-        cfn_log("critical", "[sync_docker_run] Job '%s' was unsuccessful. Details: %s", job_uuid, e)
-        raise ContainerCreationFail(f"Container spin up unsucessful. Details: {e}") from e
-
-
 async def container_create(job_uuid: str) -> None:
     """
     Creates a container task and streams the container logs.
@@ -109,7 +71,11 @@ async def container_create(job_uuid: str) -> None:
         'ContainerCreationFail', 'Exception'.
     """
     try:
-        container_task = asyncio.to_thread(sync_docker_run, job_uuid)
+        container_runtime = state.container_runtime
+        assert container_runtime
+
+        runtime: ContainerRuntime = RUNTIME_REGISTRY[container_runtime]()
+        container_task = asyncio.to_thread(runtime.create, job_uuid)
         await container_task
         await asyncio.to_thread(stream_logs, job_uuid)
     except ContainerCreationFail as e:

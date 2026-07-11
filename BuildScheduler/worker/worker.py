@@ -10,17 +10,22 @@ from dotenv import load_dotenv
 
 load_dotenv("/home/vire/vire/.env")
 
-from resolve_worker_state import fetch_job_status, update_job_state
+from BuildScheduler.worker.schema.base_runtime import ContainerRuntime
+from resolve_worker_state import update_job_state
 from cli_parser import load_parser
+
 from core.cleanup_container import remove_container
 from core.create_container_job import container_create
 from core.stream_redis_log import publish_log_redis
-from docker.errors import NotFound
 from schema.errors import CredentialError
+
 from utils import state
 from utils.vire_logger import cfn_log
+from utils.container_runtimes.runtime_registry import RUNTIME_REGISTRY
 
-client = state.client
+assert state.container_runtime
+runtime: ContainerRuntime = RUNTIME_REGISTRY[state.container_runtime]()
+
 
 def setup_logfile_location(job_uuid):
     """Sets up the logfile directory and locations."""
@@ -33,60 +38,14 @@ def setup_logfile_location(job_uuid):
 # Helper
 def complete_final_tasks():
     """The function called for the finally block in main (try, except)."""
-    #Helper
-    def stream_file():
-        try:
-            assert state.job_uuid is not None
-            worker_output_dir = os.getenv("WORKER_OUTPUT_DIR")
-            assert worker_output_dir is not None
-            assert state.user_uuid is not None
-
-            stream, stat = client.api.get_archive(state.job_uuid, output_path)
-
-            if fetch_job_status(job_uuid=state.job_uuid, user_uuid=state.user_uuid) == "cancelled":
-                return
-            path_to_tar = os.path.join(worker_output_dir, f"{state.job_uuid}.tar")
-            with open(path_to_tar, "wb") as tar_file:
-                for chunk in stream:
-                    tar_file.write(chunk)
-            update_job_state(state.job_uuid, "finished", "running")
-
-        except NotFound:
-            assert state.user_uuid is not None
-            assert state.job_uuid is not None
-
-            status = fetch_job_status(job_uuid=state.job_uuid, user_uuid=state.user_uuid)
-            cfn_log("info", status)
-            if status == "cancelled":
-                return
-            cfn_log(
-                "info", "The output_path (%s) given for job '%s' doesn't exist inside the container.",
-                output_dir, state.job_uuid,
-            )
-            publish_log_redis(dedent(
-                f"""
-                Error: The output directory given ({output_dir}) does not exist in the container.
-
-                Details:
-                    Dir given: '{output_dir}' (In vire.toml)
-                    Job UUID: '{state.job_uuid}'
-                    Clone link: {state.remote}
-                    Commit SHA: '{state.COMMIT_ID}'
-
-                Suggested fixes:
-                    1. Check build configuration of the framework (vite.config.js if vite, etc.)
-                         for the output directory and ensure it matches the one provided in vire.toml.
-                    2. Check the spelling of the output directories provided.
-                """
-            ))
-
     # Main logic
+    global runtime
     try:
         assert state.OUTPUT_DIR is not None, "Output directory is None"
         assert state.job_uuid is not None
-        output_dir = state.OUTPUT_DIR
-        output_path = os.path.join("/workspace", f"{state.repo_name}", output_dir)
-        stream_file()
+
+        runtime.stream_file()
+
     except Exception as e:
         assert state.job_uuid is not None
         cfn_log("critical", "Finally block function caught 'Exception'. %s", e)

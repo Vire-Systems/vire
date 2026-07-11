@@ -7,7 +7,6 @@ from resolve_worker_state import fetch_job_status
 assert state.redis_url is not None
 
 r = from_url(state.redis_url)
-client = state.client
 
 # Helper called by 'stream_logs'
 def publish_log_redis(line: str)-> None:
@@ -29,10 +28,13 @@ def publish_log_redis(line: str)-> None:
 # Calls 'publish_log_redis'
 def stream_logs(job_uuid: str)-> None:
     try:
-        container = client.containers.get(job_uuid)
-        for line in container.logs(stream=True, follow=True, stdout=True, stderr=True, timestamps=True):
+        from utils.container_runtimes.runtime_registry import RUNTIME_REGISTRY
+        assert state.container_runtime is not None
+        runtime = RUNTIME_REGISTRY[state.container_runtime]()
+
+        container_log_generator = runtime.get_container_log(job_uuid)
+        for line in container_log_generator:
             str_line = line.decode("utf-8")
-            if len(str_line) >= 32:
-                publish_log_redis(str_line)
+            publish_log_redis(str_line)
     except Exception as e:
         cfn_log("critical", "[stream_logs] Error in stream_logs. Details: (%s)", e)

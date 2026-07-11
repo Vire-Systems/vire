@@ -1,8 +1,6 @@
 import os
 from pathlib import Path
 
-import docker
-
 # State
 job_uuid = None
 remote = None
@@ -18,8 +16,8 @@ OUTPUT_DIR: str | None = None
 
 CONTAINER_EXPIRY = 300
 
-# Docker
-client = docker.from_env()
+# container runtime
+container_runtime = os.getenv("CONTAINER_RUNTIME")
 
 # Redis
 redis_url = os.getenv("REDIS_URL")
