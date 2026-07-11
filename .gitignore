@@ -7,6 +7,5 @@ test.py
 test/
 ruff.toml
 stuff_to_do.txt
-ZExamples/
 scalene-profile.json
 test1.py
