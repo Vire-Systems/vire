@@ -8,6 +8,7 @@ Functions -
 from fastapi import APIRouter
 
 from BuildScheduler.shared.pub_redis import publish_log_redis
+from Vire.api.router_models.build import CancelBuildResponse
 from Vire.core.cancel_build_req import terminate_workers
 from Vire.models.pydantic_classes import BuildCancelModel
 from BuildScheduler.Scheduler.db.sqlite_orm.crud import read
@@ -28,6 +29,6 @@ async def cancel_build_req(BCM: BuildCancelModel):
 
         await terminate_workers(job_uuids=BCM.job_uuids)
         
-        return {"success": True}
+        return CancelBuildResponse(success=True)
     except Exception:
-        return {"success": False}
+        return CancelBuildResponse(success=False)

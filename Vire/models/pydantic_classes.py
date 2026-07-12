@@ -5,8 +5,14 @@ class BuildRequestModel(BaseModel):
     A data model for POST /build/build_request API using pydantic's BaseModel for data validation.
     
     Attributes - 
-        user_uuid,
-        job_uuid,
+    job_uuid
+    user_uuid
+    remote_link
+    commit_id
+    provider
+    remote_user
+    remote_reponame
+    branch
         
     """
     job_uuid: str
