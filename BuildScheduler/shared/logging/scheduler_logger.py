@@ -10,7 +10,7 @@ from typing import Literal
 
 from typing_extensions import Callable
 
-async def vire_logger(
+def vire_logger(
     log_type: Literal["info", "warn", "error", "critical", "exit"],
     obj:str, *args
 )-> None:
