@@ -10,7 +10,7 @@ DB_URL = os.getenv("DB_URL")
 
 # Worker launching stuff
 python_bin_path = os.getenv("PYTHON_BIN_PATH")
-worker_path = os.getenv("WORKER_PATH")
+worker_package_location = os.getenv("WORKER_PACKAGE_LOCATION")
 
 # State
 docker_client = docker.from_env()

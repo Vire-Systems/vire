@@ -8,18 +8,22 @@ Functions -
 """
 
 import asyncio
+from textwrap import dedent
+import time
 
-from core.stream_redis_log import publish_log_redis, stream_logs
-from schema.errors import ContainerCreationFail, InstallReqMismatch, UnsupportedFramework
-from utils import state
-from utils.container_runtimes.runtime_registry import RUNTIME_REGISTRY
-from schema.base_runtime import ContainerRuntime
-from utils.adapter import FRAMEWORK_REGISTRY
-from utils.vire_logger import cfn_log
+from BuildScheduler.shared.logging.scheduler_logger import vire_logger
+from BuildScheduler.worker.schema.worker_dataclasses import WorkerContext
+from BuildScheduler.worker.utils.state import worker_config
+from BuildScheduler.shared.logging.pub_redis import publish_log_redis
+
+from BuildScheduler.worker.schema.errors import ContainerCreationFail, InstallReqMismatch, UnsupportedFramework
+from BuildScheduler.shared.container_runtimes.runtime_registry import RUNTIME_REGISTRY
+from BuildScheduler.shared.container_runtimes.base_runtime import ContainerRuntime
+from BuildScheduler.worker.utils.adapter import FRAMEWORK_REGISTRY
 
 
 # Helper
-def setup_creation(repo_name: str, framework: str, package_manager: str) -> tuple[str | None, str | None]:
+def setup_creation(worker_context: WorkerContext) -> tuple[str, str]:
     """
     Args
 
@@ -34,24 +38,24 @@ def setup_creation(repo_name: str, framework: str, package_manager: str) -> tupl
     Raises worker.schema.errors.UnsupportedFramework if framework_registry.get returns None
     """
 
-    framework_adapter = FRAMEWORK_REGISTRY[framework]
+    framework_adapter = FRAMEWORK_REGISTRY[worker_context.framework]
     if not framework_adapter:
-        raise UnsupportedFramework(f"{framework} is not supported.")
+        raise UnsupportedFramework(f"{worker_context.framework} is not supported.")
     try:
         image = framework_adapter.image
 
-        build_cmd: str = framework_adapter.build_command[package_manager]
-        checkout = f"git checkout {state.COMMIT_ID}"
-        clone = f"git clone {state.remote}"
+        build_cmd: str = framework_adapter.build_command[worker_context.package_manager]
+        checkout = f"git checkout {worker_context.COMMIT_ID}"
+        clone = f"git clone {worker_context.remote}"
 
-        cd = f"cd {repo_name}"
+        cd = f"cd {worker_context.repo_name}"
         clone_and_cd = f"{clone} && {cd}"
         base = f"{clone_and_cd} && {checkout}"
 
-        if state.install_req:
-            install_cmd = framework_adapter.install_command[package_manager]
+        if worker_context.install_req:
+            install_cmd = framework_adapter.install_command[worker_context.package_manager]
             cmd_body = f"{base} && {install_cmd} && {build_cmd}"
-        elif not state.install_req:
+        elif not worker_context.install_req:
             cmd_body = f"{base} && {build_cmd}"
         else:
             raise InstallReqMismatch("'install_req' can only be a bool.")
@@ -60,10 +64,10 @@ def setup_creation(repo_name: str, framework: str, package_manager: str) -> tupl
     except InstallReqMismatch as e:
         raise e
     except Exception as e:
-        cfn_log("critical", "[worker setup_creation] Unable to initialize setup. Details: %s", e)
+        vire_logger("critical", "[worker setup_creation] Unable to initialize setup. Details: %s", e)
         raise e
 
-async def container_create(job_uuid: str) -> None:
+async def container_create(worker_context: WorkerContext) -> None:
     """
     Creates a container task and streams the container logs.
 
@@ -71,16 +75,41 @@ async def container_create(job_uuid: str) -> None:
         'ContainerCreationFail', 'Exception'.
     """
     try:
-        container_runtime = state.container_runtime
-        assert container_runtime
+        runtime: ContainerRuntime = RUNTIME_REGISTRY[worker_config.CONTAINER_RUNTIME]()
 
-        runtime: ContainerRuntime = RUNTIME_REGISTRY[container_runtime]()
-        container_task = asyncio.to_thread(runtime.create, job_uuid)
+        # Container creation
+        expires_at = int(time.time() + worker_config.CONTAINER_EXPIRY)
+        image, cmd_body = setup_creation(worker_context=worker_context)
+
+        if not image or not cmd_body:
+            raise ContainerCreationFail(f"{'Image' if not image else 'cmd'} Cannot be none.")
+        cmd = ["sh", "-c", cmd_body]
+        
+        container_task = asyncio.to_thread(runtime.create, worker_context.job_uuid, image, cmd, expires_at)
         await container_task
-        await asyncio.to_thread(stream_logs, job_uuid)
+
+        container_log_generator = runtime.get_container_log(worker_context.job_uuid)
+
+        for line in container_log_generator:
+            str_line = line.decode("utf-8")
+            await publish_log_redis(
+                str_line,
+                user_uuid= worker_context.user_uuid,
+                job_uuid=worker_context.job_uuid
+            )
+
     except ContainerCreationFail as e:
-        await asyncio.to_thread(publish_log_redis, str(e))
+        await publish_log_redis(
+            line=dedent(
+                """
+                VC-WK-001. Internal error. 
+
+                Note: Configuration error. If you see this, open an issue on github with a screenshot.
+                """),
+            user_uuid= worker_context.user_uuid, job_uuid=worker_context.job_uuid
+        )
+        vire_logger("critical", "Container creation failed. Details: %s", str(e))
     except Exception as e:
-        cfn_log(
+        vire_logger(
             "critical", "[container_create] Container creation for job '%s' was unsucessful. Details: %s", job_uuid, e
         )

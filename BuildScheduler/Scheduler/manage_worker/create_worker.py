@@ -14,7 +14,7 @@ from BuildScheduler.Scheduler.db.sqlite_orm.crud import update
 from BuildScheduler.Scheduler.errors.db_errors import NoJobStateError
 from BuildScheduler.Scheduler.manage_worker.del_container import delayed_delete
 from BuildScheduler.shared.pub_redis import publish_log_redis
-from BuildScheduler.Scheduler.utils.state import python_bin_path, worker_path
+from BuildScheduler.Scheduler.utils.state import python_bin_path, worker_package_location
 from BuildScheduler.shared.scheduler_logger import vire_logger
 
 
@@ -51,7 +51,8 @@ async def create_worker_process(WCP: WorkerCreationParams) -> None:
             cmd = [
                 "nohup",
                 python_bin_path,
-                worker_path,
+                "-m",
+                worker_package_location,
                 "--json_struct",
                 argument,
             ]

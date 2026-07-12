@@ -2,7 +2,7 @@
 
 # Vite section at ln 6
 
-from schema.worker_dataclasses import FrameworkAdapter
+from BuildScheduler.worker.schema.worker_dataclasses import FrameworkAdapter
 
 #Vite
 vite = FrameworkAdapter(

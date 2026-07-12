@@ -1,4 +1,4 @@
-from utils.container_runtimes import (
+from BuildScheduler.shared.container_runtimes.runtimes import (
     docker_runtime
 )
 

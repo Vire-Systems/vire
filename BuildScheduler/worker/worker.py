@@ -8,89 +8,128 @@ import os
 from textwrap import dedent
 from dotenv import load_dotenv
 
+
 load_dotenv("/home/vire/vire/.env")
 
-from BuildScheduler.worker.schema.base_runtime import ContainerRuntime
-from resolve_worker_state import update_job_state
-from cli_parser import load_parser
+from BuildScheduler.worker.schema.worker_dataclasses import WorkerContext
+from BuildScheduler.worker.utils.state import worker_config
 
-from core.cleanup_container import remove_container
-from core.create_container_job import container_create
-from core.stream_redis_log import publish_log_redis
-from schema.errors import CredentialError
+from BuildScheduler.shared.container_runtimes.errors import OutputDirNotFound
+from BuildScheduler.shared.container_runtimes.base_runtime import ContainerRuntime
+from BuildScheduler.shared.container_runtimes.runtime_registry import RUNTIME_REGISTRY
+from BuildScheduler.shared.logging.scheduler_logger import vire_logger
 
-from utils import state
-from utils.vire_logger import cfn_log
-from utils.container_runtimes.runtime_registry import RUNTIME_REGISTRY
+from BuildScheduler.worker.resolve_worker_state import update_job_state, fetch_job_status
+from BuildScheduler.worker.cli_parser import load_parser
 
-assert state.container_runtime
-runtime: ContainerRuntime = RUNTIME_REGISTRY[state.container_runtime]()
+from BuildScheduler.worker.core.cleanup_container import remove_container
+from BuildScheduler.worker.core.create_container_job import container_create
+from BuildScheduler.shared.logging.pub_redis import publish_log_redis
+from BuildScheduler.worker.schema.errors import CredentialError
+
+runtime: ContainerRuntime = RUNTIME_REGISTRY[worker_config.CONTAINER_RUNTIME]()
 
 
 def setup_logfile_location(job_uuid):
     """Sets up the logfile directory and locations."""
-    assert state.logfile_dir is not None
-    worker_log_dir = os.path.join(state.logfile_dir, job_uuid)
+    worker_log_dir = os.path.join(worker_config.WORKER_LOGDIR, job_uuid)
     os.makedirs(worker_log_dir, exist_ok=True)
     return os.path.join(worker_log_dir, f"{job_uuid}.log")
 
+async def stream_file(worker_context: WorkerContext):
+    """
+    Stream an archived file from the container.
+    """
+
+    try:
+        status = fetch_job_status(job_uuid=worker_context.job_uuid, user_uuid=worker_context.user_uuid)
+        if status == "cancelled":
+            return
+        output_path = os.path.join("/workspace", f"{worker_context.repo_name}", worker_context.OUTPUT_DIR)
+        path_to_tar = os.path.join(worker_config.WORKER_OUTPUT_DIR, f"{worker_context.job_uuid}.tar")
+
+        runtime.stream_file(
+            job_uuid=worker_context.job_uuid,
+            output_path=output_path,
+            path_to_archive=path_to_tar
+        )
+
+    except OutputDirNotFound as e:
+        status = fetch_job_status(job_uuid=worker_context.job_uuid, user_uuid=worker_context.user_uuid)
+        if status == "cancelled":
+            return
+        vire_logger(
+            "info", str(e),
+            worker_context.OUTPUT_DIR, worker_context.job_uuid,
+        )
+        await publish_log_redis(dedent(
+            f"""
+            Error: {str(e)}
+
+            Details:
+                Dir given: '{worker_context.OUTPUT_DIR}' (In vire.toml)
+                Job UUID: '{worker_context.job_uuid}'
+                Clone link: {worker_context.remote}
+                Commit SHA: '{worker_context.COMMIT_ID}'
+
+            Suggested fixes:
+                1. Check build configuration of the framework (vite.config.js if vite, etc.)
+                     for the output directory and ensure it matches the one provided in vire.toml.
+                2. Check the spelling of the output directories provided.
+            """
+        ), user_uuid= worker_context.user_uuid, job_uuid=worker_context.job_uuid)
+    
 
 # Helper
-def complete_final_tasks():
+async def complete_final_tasks(worker_context: WorkerContext):
     """The function called for the finally block in main (try, except)."""
     # Main logic
     global runtime
     try:
-        assert state.OUTPUT_DIR is not None, "Output directory is None"
-        assert state.job_uuid is not None
-
-        runtime.stream_file()
+        await stream_file(worker_context=worker_context)
 
     except Exception as e:
-        assert state.job_uuid is not None
-        cfn_log("critical", "Finally block function caught 'Exception'. %s", e)
-        update_job_state(state.job_uuid, "crashed", "running")
+        vire_logger("critical", "Finally block function caught 'Exception'. %s", e)
+        update_job_state(worker_context.job_uuid, "crashed", "running")
     try:
-        job_uuid = state.job_uuid
-        if job_uuid:
-            remove_container(job_uuid=job_uuid)
+        await remove_container(worker_context=worker_context)
     except Exception as e:
-        cfn_log("critical", "[worker entry_point] remove_container unable to remove the container. Details %s", e)
+        vire_logger("critical", "[worker entry_point] remove_container unable to remove the container. Details %s", e)
         raise e
 
 
 # Main
-async def main():
+async def main(worker_context: WorkerContext):
+    job_uuid = worker_context.job_uuid
     try:
-        assert state.job_uuid is not None, "Job UUID is None"
-        await container_create(state.job_uuid)
-        complete_final_tasks()
+        assert job_uuid is not None, "Job UUID is None"
+        await container_create(worker_context)
+        await complete_final_tasks(worker_context=worker_context)
 
     except Exception as e:
-        assert state.job_uuid is not None, "Job_UUID is None"
-        update_job_state(state.job_uuid, "running", "crashed")
-        cfn_log("critical", "Vire faced an unexpected issue while trying to create a worker process. Details: %s", e)
-        publish_log_redis(dedent(
+        update_job_state(job_uuid, "running", "crashed")
+        vire_logger("critical", "Vire faced an unexpected issue while trying to create a worker process. Details: %s", e)
+        await publish_log_redis(dedent(
             """
             Error: VC-WK-001. Vire faced an unexpected issue while trying to create a worker process.
 
             If you see this error, Please create an issue on github with a screenshot. This is an internal error.
             """
-        )) 
+        ), user_uuid= worker_context.user_uuid, job_uuid=worker_context.job_uuid) 
 
 
-def init():
+def init()-> WorkerContext:
+    worker_context = load_parser()
     try:
-        load_parser()
-        logfile_location = setup_logfile_location(state.job_uuid)
+        logfile_location = setup_logfile_location(worker_context.job_uuid)
         logging.basicConfig(filename=logfile_location, encoding="utf-8", level=logging.INFO)
 
-    except CredentialError as e:
-        assert state.job_uuid is not None, "Job UUID is None"
+        return worker_context
 
-        update_job_state(state.job_uuid, "running", "crashed")
-        cfn_log("critical", "[worker init()]-> CredentialError. The values provided have invalid None type.")
-        publish_log_redis(dedent(
+    except CredentialError as e:
+        update_job_state(worker_context.job_uuid, "running", "crashed")
+        vire_logger("exit", "[worker init()]-> CredentialError. The values provided have invalid None type.")
+        asyncio.run(publish_log_redis(dedent(
             f"""
             Error: The data provided was invalid.
 
@@ -100,45 +139,47 @@ def init():
             Error:
                 {e}
             """
-        ))
+        ), user_uuid= worker_context.user_uuid, job_uuid=worker_context.job_uuid))
+        exit()
 
 # Entry point
 if __name__ == "__main__":
+    worker_context = init()
+    job_uuid = worker_context.job_uuid
     try:
-        init()
-        asyncio.run(main())
+        asyncio.run(main(worker_context= worker_context))
+
     except KeyError:
-        assert state.job_uuid is not None, "Job UUID is None"
-        update_job_state(state.job_uuid, "running", "crashed")
-        cfn_log("critical", "The values provided don't match the expected JSON structure.")
-        publish_log_redis(dedent(
+        update_job_state(job_uuid, "running", "crashed")
+        vire_logger("critical", "The values provided don't match the expected JSON structure.")
+        asyncio.run(publish_log_redis(dedent(
             """
             Error: The values provided don't match the expected JSON structure.
 
             If you see this error, Please create an issue on github with a screenshot. This is an internal error.
             """
-        ))
-    except AssertionError as e:
-        if state.job_uuid:
-            update_job_state(state.job_uuid, "running", "crashed")
-            cfn_log("critical", "[worker entry_point]-> AssertionError while trying to create a worker process. Details: %s", str(e))
-            publish_log_redis(dedent(
-                f"""
-                Error: Vire faced an unexpected issue while trying to create a worker process.
-    
-                If you see this error, Please create an issue on github with a screenshot. This is an internal error.
+        ), user_uuid= worker_context.user_uuid, job_uuid=worker_context.job_uuid))
 
-                Issue: {e}
-                """
-            ))
+    except AssertionError as e:
+        update_job_state(job_uuid, "running", "crashed")
+        vire_logger("critical", "[worker entry_point]-> AssertionError while trying to create a worker process. Details: %s", str(e))
+        asyncio.run(publish_log_redis(dedent(
+            f"""
+            Error: Vire faced an unexpected issue while trying to create a worker process.
+    
+            If you see this error, Please create an issue on github with a screenshot. This is an internal error.
+
+            Issue: {e}
+            """
+        ), user_uuid= worker_context.user_uuid, job_uuid=worker_context.job_uuid))
+
     except Exception as e:
-        assert state.job_uuid is not None, "Job_UUID is None"
-        update_job_state(state.job_uuid, "running", "crashed")
-        cfn_log("critical", "Vire faced an unexpected issue while trying to create a worker process. Details: %s", e)
-        publish_log_redis(dedent(
+        update_job_state(job_uuid, "running", "crashed")
+        vire_logger("critical", "Vire faced an unexpected issue while trying to create a worker process. Details: %s", e)
+        asyncio.run(publish_log_redis(dedent(
             """
             Error: Vire faced an unexpected issue while trying to create a worker process.
 
             If you see this error, Please create an issue on github with a screenshot. This is an internal error.
             """
-        ))
+        ), user_uuid= worker_context.user_uuid, job_uuid=worker_context.job_uuid))

@@ -1,32 +1,12 @@
 import os
-from pathlib import Path
 
-# State
-job_uuid = None
-remote = None
-user_uuid = None
+from BuildScheduler.worker.schema.worker_dataclasses import WorkerConfig
 
-install_req = False
-COMMIT_ID: str | None = None
-
-framework = None
-package_manager = None
-repo_name: str | None = None
-OUTPUT_DIR: str | None = None
-
-CONTAINER_EXPIRY = 300
-
-# container runtime
-container_runtime = os.getenv("CONTAINER_RUNTIME")
-
-# Redis
-redis_url = os.getenv("REDIS_URL")
-assert redis_url is not None, f"Redis URL in {Path(__file__).resolve()} is {redis_url}."
-
-# Files
-logfile_dir = os.getenv("WORKER_LOGDIR")
-db_file = os.getenv("DB_PATH")
-
-assert db_file is not None, f"'db_file' in {Path(__file__).resolve()} is {db_file}."
-
-assert logfile_dir is not None, f"'logfile_dir' in {Path(__file__).resolve()} is {logfile_dir}."
+worker_config = WorkerConfig(
+    CONTAINER_EXPIRY=300,
+    CONTAINER_RUNTIME=os.environ["CONTAINER_RUNTIME"],
+    REDIS_URL=os.environ["REDIS_URL"],
+    WORKER_OUTPUT_DIR=os.environ["WORKER_OUTPUT_DIR"],
+    WORKER_LOGDIR=os.environ["WORKER_LOGDIR"],
+    DB_FILE=os.environ["DB_PATH"],
+)

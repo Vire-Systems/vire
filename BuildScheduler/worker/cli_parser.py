@@ -8,10 +8,8 @@ Functions -
 
 import argparse
 import json
-
-import utils.state as state
-
-from schema.errors import CredentialError
+from BuildScheduler.worker.schema.worker_dataclasses import WorkerContext
+from BuildScheduler.worker.schema.errors import CredentialError
 
 
 def load_parser():
@@ -23,7 +21,7 @@ def load_parser():
         type=str,
         required=True,
         help="""
-        JSON structure containing state.
+        JSON structure containing 
         Example: '{
             "job_uuid":"<job_uuid>",
             "user_uuid":"<user_uuid>",
@@ -41,28 +39,17 @@ def load_parser():
 
     # Variables updation.
     try:
-        state.job_uuid = json_struct["job_uuid"]
-        state.user_uuid = json_struct["user_uuid"]
-        state.remote = json_struct["remote"]
-        state.repo_name = json_struct["repo_name"]
-        state.framework = json_struct["framework"]
-        state.package_manager = json_struct["pm"]
-        state.install_req = json_struct["install_req"]
-        state.OUTPUT_DIR = json_struct["output_dir"]
-        state.COMMIT_ID = json_struct["commit_id"]
-
-        if (state.job_uuid is None) or (state.user_uuid is None):
-            raise CredentialError(
-                f"Credential error. {'job_uuid' if state.job_uuid else 'user_uuid'} cannot be 'None'."
-            )
-
-        if (state.framework is None) or (state.package_manager is None):
-            raise CredentialError(
-                f"Credential error. {'framework' if state.framework else 'package_manager'} cannot be 'None'."
-            )
-
-        if (state.remote is None) or (state.repo_name is None):
-            raise CredentialError(f"Credential error. {'Remote' if state.remote else 'repo_name'} cannot be 'None'.")
-
+        state = WorkerContext(
+            job_uuid = json_struct["job_uuid"],
+            user_uuid = json_struct["user_uuid"],
+            remote = json_struct["remote"],
+            repo_name = json_struct["repo_name"],
+            framework = json_struct["framework"],
+            package_manager = json_struct["pm"],
+            install_req = json_struct["install_req"],
+            OUTPUT_DIR = json_struct["output_dir"],
+            COMMIT_ID = json_struct["commit_id"],
+        )
+        return state
     except KeyError as exc:
-        raise KeyError from exc
+        raise CredentialError from exc

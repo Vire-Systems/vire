@@ -1,10 +1,9 @@
 import sqlite3
 from contextlib import contextmanager
 from typing import Literal
-from utils.vire_logger import cfn_log
-from utils.state import db_file
 
-assert db_file is not None, "SQLite database filepath cannot be empty."
+from BuildScheduler.shared.logging.scheduler_logger import vire_logger
+from BuildScheduler.worker.utils.state import worker_config
 
 status_update_allowlist: dict[str,list] = {
     "queued": ["running", "crashed", "finished", "cancelled"],
@@ -31,7 +30,7 @@ def db_session(db_name: str):
         connection.close()
 
 def fetch_job_status(job_uuid: str, user_uuid: str)-> str:
-    with db_session(db_file) as conn:
+    with db_session(worker_config.DB_FILE) as conn:
         cursor = conn.cursor()
         query = """
             SELECT status FROM BuildState
@@ -40,7 +39,7 @@ def fetch_job_status(job_uuid: str, user_uuid: str)-> str:
         result: tuple[str] = cursor.execute(query, (job_uuid, user_uuid)).fetchone()
         if len(result) == 1:
             return result[0]
-        cfn_log("warn", "[fetch_job_status] returned a result of length %i. Only 1 is acceptable.", len(result))
+        vire_logger("warn", "[fetch_job_status] returned a result of length %i. Only 1 is acceptable.", len(result))
 
 def update_job_state(
     job_uuid: str,
@@ -49,9 +48,9 @@ def update_job_state(
 )-> None:
     allowed_updates: list[str] = status_update_allowlist[prev_status]
     if status not in allowed_updates:
-        cfn_log("warn", "'%s' cannot be updated to '%s' for Job UUID '%s'.", prev_status, status, job_uuid)
+        vire_logger("warn", "'%s' cannot be updated to '%s' for Job UUID '%s'.", prev_status, status, job_uuid)
 
-    with db_session(db_file) as conn:
+    with db_session(worker_config.DB_FILE) as conn:
         cursor = conn.cursor()
         query = """
             UPDATE BuildState
