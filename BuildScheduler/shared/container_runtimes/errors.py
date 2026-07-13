@@ -6,3 +6,6 @@ class OutputDirNotFound(Exception):
 
 class ContainerAdapterAPIError(Exception):
     """General catch all error. Raise instead of raising an Exception."""
+
+class ContainerNotFound(Exception):
+    """Raised when the container removal is already in progress"""

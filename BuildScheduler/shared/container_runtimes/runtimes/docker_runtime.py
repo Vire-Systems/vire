@@ -21,7 +21,8 @@ from BuildScheduler.shared.container_runtimes.base_runtime import ContainerRunti
 from BuildScheduler.shared.container_runtimes.errors import (
     ContainerCreationFail,
     OutputDirNotFound,
-    ContainerAdapterAPIError
+    ContainerAdapterAPIError,
+    ContainerNotFound
 )
 
 
@@ -65,7 +66,7 @@ class DockerRuntime(ContainerRuntime):
 
 
     # Remove container ----
-    def remove(self, job_uuid: str) -> None:
+    def remove(self, job_uuid: str)-> None:
         """Name (UUID4 used for naming) based container remover"""
         try:
             client = self.get_client()
@@ -74,10 +75,10 @@ class DockerRuntime(ContainerRuntime):
             container_obj.remove(force=True)
 
         except NotFound:
-            pass
+            raise ContainerNotFound
 
         except APIError as e:
-            if "is already in progress" in str(e).lower():
+            if e.status_code == 409:
                 vire_logger("info", "[remove_container] Conflict: GC's termination in progress")
                 return
             vire_logger("critical", "[adapter, docker - remove]-> APIError. Details: %s", str(e))
