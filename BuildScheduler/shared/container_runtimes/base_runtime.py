@@ -45,6 +45,7 @@ class ContainerRuntime:
         Raises
         ------
         ContainerAdapterAPIError
+        ContainerNotFound
         """
         raise NotImplementedError
 

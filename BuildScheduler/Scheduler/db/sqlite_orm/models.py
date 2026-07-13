@@ -13,7 +13,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from datetime import datetime
 
 from BuildScheduler.Scheduler.db.sqlite_orm.db import Base, engine
-from BuildScheduler.shared.scheduler_logger import vire_logger
+from BuildScheduler.shared.logging.scheduler_logger import vire_logger
 
 
 class BuildData(Base):
@@ -63,4 +63,4 @@ async def init_db():
     """Initialize the database and start sqlalchemy engine."""
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    await vire_logger("info", "Vire state database has started up.")
+    vire_logger("info", "Vire state database has started up.")

@@ -6,7 +6,7 @@ import asyncio
 
 from BuildScheduler.Scheduler.core.core_utilities.make_worker import scheduler_create_worker
 from BuildScheduler.Scheduler.utils import queues_locks
-from BuildScheduler.shared.scheduler_logger import vire_logger
+from BuildScheduler.shared.logging.scheduler_logger import vire_logger
 
 
 client = docker.from_env()
@@ -48,9 +48,10 @@ async def dispatch_queued_job(available_slots: int)-> Literal["queued", "started
                 job_uuid = queues_locks.db_build_queue.get_nowait()
                 job_uuids.append(job_uuid)
             except asyncio.QueueEmpty:
-                await vire_logger("info",
-                    "Not enough queued processes to spawn. Available slots: %i. Number of spawned processes: %i",
-                    available_slots, len(job_uuids)
-                )
+                if len(job_uuids) != 0:
+                    vire_logger("info",
+                        "Not enough queued processes to spawn. Available slots: %i. Number of spawned processes: %i",
+                        available_slots, len(job_uuids)
+                    )
                 break
     await launch_workers(job_uuids=job_uuids)

@@ -5,6 +5,16 @@ This module (scheduler_dc 'scheduler dataclasses') is responsible for providing 
 from dataclasses import dataclass
 
 @dataclass(frozen=True, slots=True)
+class SchedulerConfig:
+    REDIS_URL : str
+    SQLITE_DB_PATH : str
+    DB_URL: str 
+    PYTHON_BIN_PATH: str
+    WORKER_PACKAGE_LOCATION: str
+    MAX_BUILDS_NUMBER: int
+    CONTAINER_REMOVAL_DELAY: int
+
+@dataclass(frozen=True, slots=True)
 class WorkerCreationParams():
     """
     Params for create_worker_process function. Returned with data by CRUD's fetch_worker_data function.

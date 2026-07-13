@@ -7,14 +7,11 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sess
 from sqlalchemy.orm import declarative_base
 from sqlalchemy import event
 
-from BuildScheduler.Scheduler.utils.state import sqlite_db_path, DB_URL
+from BuildScheduler.Scheduler.utils.state import scheduler_config
 
-assert sqlite_db_path is not None, "sqlite_db_path failed to load."
-assert DB_URL is not None
+os.makedirs(os.path.dirname(scheduler_config.SQLITE_DB_PATH), exist_ok=True)
 
-os.makedirs(os.path.dirname(sqlite_db_path), exist_ok=True)
-
-engine = create_async_engine(DB_URL, echo=False)
+engine = create_async_engine(scheduler_config.DB_URL, echo=False)
 async_session = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
 Base = declarative_base()
 
