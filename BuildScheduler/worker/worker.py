@@ -160,19 +160,6 @@ if __name__ == "__main__":
             """
         ), user_uuid= worker_context.user_uuid, job_uuid=worker_context.job_uuid))
 
-    except AssertionError as e:
-        update_job_state(job_uuid, "running", "crashed")
-        vire_logger("critical", "[worker entry_point]-> AssertionError while trying to create a worker process. Details: %s", str(e))
-        asyncio.run(publish_log_redis(dedent(
-            f"""
-            Error: Vire faced an unexpected issue while trying to create a worker process.
-    
-            If you see this error, Please create an issue on github with a screenshot. This is an internal error.
-
-            Issue: {e}
-            """
-        ), user_uuid= worker_context.user_uuid, job_uuid=worker_context.job_uuid))
-
     except Exception as e:
         update_job_state(job_uuid, "running", "crashed")
         vire_logger("critical", "Vire faced an unexpected issue while trying to create a worker process. Details: %s", e)

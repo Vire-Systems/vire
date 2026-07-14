@@ -11,7 +11,9 @@ import asyncio
 from textwrap import dedent
 import time
 
+from BuildScheduler.shared.container_runtimes.runtime_dc import RuntimeMetadata
 from BuildScheduler.shared.logging.scheduler_logger import vire_logger
+from BuildScheduler.shared.shared_state import shared_config
 from BuildScheduler.worker.schema.worker_dataclasses import WorkerContext
 from BuildScheduler.worker.utils.state import worker_config
 from BuildScheduler.shared.logging.pub_redis import publish_log_redis
@@ -84,10 +86,20 @@ async def container_create(worker_context: WorkerContext) -> None:
         if not image or not cmd_body:
             raise ContainerCreationFail(f"{'Image' if not image else 'cmd'} Cannot be none.")
         cmd = ["sh", "-c", cmd_body]
-        
-        container_task = asyncio.to_thread(runtime.create, worker_context.job_uuid, image, cmd, expires_at)
-        await container_task
 
+        runtime_metadata = RuntimeMetadata(
+            **shared_config.CONTAINER_METADATA,
+            expires_at = str(expires_at)
+        )
+
+        container_task = asyncio.to_thread(
+            runtime.create, 
+            job_uuid= worker_context.job_uuid,
+            image= image,
+            cmd= cmd,
+            metadata= runtime_metadata
+        )
+        await container_task
         container_log_generator = runtime.get_container_log(worker_context.job_uuid)
 
         for line in container_log_generator:
@@ -111,5 +123,6 @@ async def container_create(worker_context: WorkerContext) -> None:
         vire_logger("critical", "Container creation failed. Details: %s", str(e))
     except Exception as e:
         vire_logger(
-            "critical", "[container_create] Container creation for job '%s' was unsucessful. Details: %s", job_uuid, e
+            "critical", "[container_create] Container creation for job '%s' was unsucessful. Details: %s",
+            worker_context.job_uuid, e
         )
