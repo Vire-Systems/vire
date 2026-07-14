@@ -1,10 +1,8 @@
 import aiosqlite
-from state import db_path
-
-assert db_path is not None
+from BuildScheduler.GC.utils.state import gc_config
 
 async def get_user_uuid(job_uuid: str)-> str | None:
-    async with aiosqlite.connect(db_path) as db:
+    async with aiosqlite.connect(gc_config.DB_PATH) as db:
         query = "SELECT user_uuid FROM BuildState WHERE job_uuid=?"
         await db.execute("PRAGMA journal_mode=WAL")
         await db.execute("PRAGMA busy_timeout=5000")
@@ -20,7 +18,7 @@ async def update_job_status(
     status="terminated",
     error_code: str | None = None
 )-> None:
-    async with aiosqlite.connect(db_path) as db:
+    async with aiosqlite.connect(gc_config.DB_PATH) as db:
         placeholders = ','.join('?' for _ in job_uuids)
 
         # Pragmas
