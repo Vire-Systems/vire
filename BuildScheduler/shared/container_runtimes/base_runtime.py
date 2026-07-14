@@ -1,6 +1,8 @@
 """The master class inherited by all Container runtime classes"""
 
-from typing import Generator
+from typing import AsyncGenerator, Generator
+
+from BuildScheduler.shared.container_runtimes.runtime_dc import RuntimeMetadata
 
 
 class ContainerRuntime:
@@ -13,7 +15,7 @@ class ContainerRuntime:
         job_uuid: str,
         image: str,
         cmd: list[str],
-        expires_at: int
+        metadata: RuntimeMetadata
     )-> None:
         """
         Run a container synchronously.
@@ -24,7 +26,7 @@ class ContainerRuntime:
         job_uuid - Job UUID of the container job. Also used as container name.
         image - Name of the image to use.
         cmd - The command to run
-        expires_at - The timestamp (time.time) when the container should expire.
+        metadata - Build metadata to add to creation.
     
         Raises
         ------
@@ -86,4 +88,17 @@ class ContainerRuntime:
         ContainerAdapterAPIError:
             - General catch (exception)
         """
+        raise NotImplementedError
+
+    async def list_expired_containers(self, metadata: RuntimeMetadata)-> AsyncGenerator[str, None]:
+        """
+        Returns a list of container names that have expired.
+
+        Raises
+        ------
+
+        ContainerAdapterAPIError
+        """
+        if False:
+            yield
         raise NotImplementedError

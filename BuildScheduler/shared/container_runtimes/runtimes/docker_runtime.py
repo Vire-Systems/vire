@@ -8,13 +8,18 @@ This module provides the `DockerRuntime` implementation.
 3. Converts Docker errors into Vire specific errors.
 """
 
-from typing import Generator
+import asyncio
+from dataclasses import asdict
+import time
+from typing import AsyncGenerator, Generator
 
 import docker
 
 from docker.client import DockerClient
 from docker.errors import NotFound, APIError
+from docker.models.containers import Container
 
+from BuildScheduler.shared.container_runtimes.runtime_dc import RuntimeMetadata
 from BuildScheduler.shared.logging.scheduler_logger import vire_logger
 from BuildScheduler.shared.container_runtimes.base_runtime import ContainerRuntime
 
@@ -39,14 +44,28 @@ class DockerRuntime(ContainerRuntime):
         job_uuid: str,
         image: str,
         cmd: list[str],
-        expires_at: int   
+        metadata: RuntimeMetadata
     )-> None:
         """
         Run a docker container synchronously.
         Intended to be used by the worker package.
+
+        metadata would look like 
+        {
+            managed_by : vire
+            expires_at : some str(int)
+        }
         """
         try:
             client = self.get_client()
+            if metadata.expires_at is None:
+                vire_logger("critical", "metadata.expires_at has a value of 'None'.")
+                raise ValueError("expires_at is required for container creation.")
+
+            labels = {
+                "managed_by": metadata.managed_by,
+                "expires_at": str(metadata.expires_at)
+            }
             client.containers.run(
                 name=job_uuid,
                 image=image,
@@ -55,7 +74,7 @@ class DockerRuntime(ContainerRuntime):
                 cpu_quota=50000,
                 cpu_period=100000,
                 detach=True,
-                labels={"managed_by": "build_scheduler", "expires_at": str(expires_at)},
+                labels=labels,
             )
         except APIError as e:
             vire_logger("critical", "Docker raised APIError. Details: %s", str(e))
@@ -123,4 +142,22 @@ class DockerRuntime(ContainerRuntime):
 
         except Exception as e:
             vire_logger("critical", "[adapter, docker - get_container_log]-> Exception.")
+            raise ContainerAdapterAPIError from e
+
+    async def list_expired_containers(self, metadata: RuntimeMetadata)-> AsyncGenerator[str, None]:
+        try:
+            now_time: int = int(time.time())
+            client = self.get_client()
+            filter_labels: dict[str, str | list[str] | bool] = {
+                "label" : [
+                    f"{k}={v}" for k, v in asdict(metadata).items() if k != "expires_at"
+                ]
+            }
+            raw_container_list:list[Container] = await asyncio.to_thread(client.containers.list, all=True, filters=filter_labels)
+            for container_obj in raw_container_list:
+                if int(container_obj.labels.get("expires_at", now_time)) <= now_time-15:
+                    assert container_obj.name is not None
+                    yield container_obj.name
+        except Exception as e:
+            vire_logger("critical", "[GC get_containers_overdue] unable to get containers which are overdue. Details: %s", e)
             raise ContainerAdapterAPIError from e

@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from types import MappingProxyType
 
 @dataclass(frozen=True, slots=True)
 class SharedConfig:
@@ -7,3 +8,4 @@ class SharedConfig:
     VALID_LOCKFILES: tuple[str, ...]
     VALID_PMS: tuple[str, ...]
     CONTAINER_RUNTIME: str
+    CONTAINER_METADATA: MappingProxyType[str, str]

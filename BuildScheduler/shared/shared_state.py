@@ -2,7 +2,12 @@
 
 import os
 from BuildScheduler.shared.shared_config import SharedConfig
+from types import MappingProxyType
 
+
+container_metadata: dict[str, str] = {
+    "managed_by": "build_scheduler"
+}
 
 lockfile_matrix = {
     "package-lock.json": "npm",
@@ -34,5 +39,6 @@ shared_config = SharedConfig(
     CANCELLABLE_BUILD_STATES = set(os.environ["CANCELLABLE"].strip().split(',')),
     VALID_LOCKFILES = valid_lockfile_list,
     VALID_PMS=package_managers_list,
-    CONTAINER_RUNTIME=os.environ["CONTAINER_RUNTIME"]
+    CONTAINER_RUNTIME=os.environ["CONTAINER_RUNTIME"],
+    CONTAINER_METADATA = MappingProxyType(container_metadata)
 )
