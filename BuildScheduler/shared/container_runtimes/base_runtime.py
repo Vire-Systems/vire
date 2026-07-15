@@ -90,11 +90,29 @@ class ContainerRuntime:
         """
         raise NotImplementedError
 
+    async def list_managed_containers(self, metadata: RuntimeMetadata, count: bool)-> int | AsyncGenerator[str, None]:
+        """
+        Yields the names (aka job_uuid) of containers managed by Vire.
+
+        Returns:
+        --------
+        if count = False; AsyncGenerator of container names that are managed by vire
+        if count = True; Returns the number of said containers 
+
+        Raises:
+        ------
+        """
+        if False:
+            yield
+
+        raise NotImplementedError
+
     async def list_expired_containers(self, metadata: RuntimeMetadata)-> AsyncGenerator[str, None]:
         """
-        Returns a list of container names that have expired.
+        Yields the name (aka job_uuid) of containers that have expired.
+        Intended to be used by the GC or somewhere where expired containers' names are needed.
 
-        Raises
+        Raises:
         ------
 
         ContainerAdapterAPIError

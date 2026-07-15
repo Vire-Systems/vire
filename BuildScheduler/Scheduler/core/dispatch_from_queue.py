@@ -1,28 +1,34 @@
 """The utility module used for dispatching queued jobs."""
 
-import docker
 from typing import Literal
 import asyncio
 
 from BuildScheduler.Scheduler.core.core_utilities.make_worker import scheduler_create_worker
 from BuildScheduler.Scheduler.utils import queues_locks
+from BuildScheduler.shared.container_runtimes.runtime_dc import RuntimeMetadata
+from BuildScheduler.shared.container_runtimes.runtime_registry import RUNTIME_REGISTRY
 from BuildScheduler.shared.logging.scheduler_logger import vire_logger
+from BuildScheduler.shared.shared_state import shared_config
 
-
-client = docker.from_env()
 
 async def get_worker_count(fetch_all = False)-> int:
     """
     Fetch active worker count from docker API.
 
     Args:
-        1. fetch_all - Returns all containers including the dead / finished ones.
+    -----
+        fetch_all - Returns all containers including the dead / finished ones.
     """
-    containers = await asyncio.to_thread(client.containers.list, 
-        all=fetch_all,
-        filters={"label":"managed_by=build_scheduler"},
+    runtime = RUNTIME_REGISTRY[shared_config.CONTAINER_RUNTIME]()
+
+    metadata = RuntimeMetadata(
+        **shared_config.CONTAINER_METADATA,
+        expires_at = None
     )
-    return len(containers)
+    count_managed_containers = await runtime.list_managed_containers(metadata, count=True)
+    if not isinstance(count_managed_containers, int):
+        raise ValueError(f"The value of count_managed_containers is invalid. {count_managed_containers=}")
+    return count_managed_containers
 
 
 async def launch_workers(job_uuids: list[str])-> None:

@@ -19,5 +19,7 @@ async def scheduler_loop():
             _ = asyncio.create_task(dispatch_queued_job(available_slots))
 
             await asyncio.sleep(30)
+    except ValueError:
+        vire_logger("critical", "[scheduler_loop] The function get_worker_count returned a non int value.")
     except Exception as e:
         vire_logger("critical", "[scheduler_loop] Scheduler loop shutting down because of an error. Details: %s", str(e))

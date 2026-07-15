@@ -9,7 +9,6 @@ This module provides the `DockerRuntime` implementation.
 """
 
 import asyncio
-from dataclasses import asdict
 import time
 from typing import AsyncGenerator, Generator
 
@@ -32,11 +31,13 @@ from BuildScheduler.shared.container_runtimes.errors import (
 
 
 class DockerRuntime(ContainerRuntime):
+    def __init__(self):
+        self.client = docker.from_env()
 
     # Client ----
     def get_client(self)-> DockerClient:
         """Return the docker client."""
-        return docker.from_env()
+        return self.client
 
 
     # Container creation ---
@@ -144,20 +145,61 @@ class DockerRuntime(ContainerRuntime):
             vire_logger("critical", "[adapter, docker - get_container_log]-> Exception.")
             raise ContainerAdapterAPIError from e
 
-    async def list_expired_containers(self, metadata: RuntimeMetadata)-> AsyncGenerator[str, None]:
+
+    async def list_managed_containers(self, metadata: RuntimeMetadata, count: bool)-> int  | AsyncGenerator[str, None]:
+        """
+        Yields container names (aka job_uuid) of containers managed by vire from docker.
+        """
         try:
+            client = self.get_client()
+            filter_labels: dict[str, str | list[str] | bool] = {
+                "label" : [
+                    f"managed_by={metadata.managed_by}",
+                ]
+            }
+            raw_container_list: list[Container] = await asyncio.to_thread(
+                client.containers.list,
+                all=False,
+                filters=filter_labels
+            )
+
+            if count:
+                return len(raw_container_list)
+
+            async def return_async_generator() -> AsyncGenerator[str, None]:
+                for container in raw_container_list:
+                    if not container.name:
+                        continue
+                    yield container.name
+
+            return return_async_generator()
+        except Exception as e:
+            vire_logger("critical", "[docker adapter, list_managed_containers] unable to get containers which are overdue. Details: %s", e)
+            raise ContainerAdapterAPIError from e
+
+
+    async def list_expired_containers(self, metadata: RuntimeMetadata)-> AsyncGenerator[str, None]:
+        try:    
             now_time: int = int(time.time())
             client = self.get_client()
             filter_labels: dict[str, str | list[str] | bool] = {
                 "label" : [
-                    f"{k}={v}" for k, v in asdict(metadata).items() if k != "expires_at"
+                    f"managed_by={metadata.managed_by}",
                 ]
             }
-            raw_container_list:list[Container] = await asyncio.to_thread(client.containers.list, all=True, filters=filter_labels)
+
+            raw_container_list: list[Container] = await asyncio.to_thread(
+                client.containers.list,
+                all=True,
+                filters=filter_labels
+            )
+
             for container_obj in raw_container_list:
                 if int(container_obj.labels.get("expires_at", now_time)) <= now_time-15:
-                    assert container_obj.name is not None
+                    if container_obj.name is None:
+                        continue
                     yield container_obj.name
+
         except Exception as e:
             vire_logger("critical", "[GC get_containers_overdue] unable to get containers which are overdue. Details: %s", e)
             raise ContainerAdapterAPIError from e
