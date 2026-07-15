@@ -7,7 +7,7 @@ Functions -
 
 from fastapi import APIRouter
 
-from BuildScheduler.shared.pub_redis import publish_log_redis
+from BuildScheduler.shared.logging.pub_redis import publish_log_redis
 from Vire.api.router_models.build import CancelBuildResponse
 from Vire.core.cancel_build_req import terminate_workers
 from Vire.models.pydantic_classes import BuildCancelModel

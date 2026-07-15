@@ -11,7 +11,7 @@ from fastapi import APIRouter
 from Vire.core.register_with_queue import register_build
 from Vire.models.pydantic_classes import BuildRequestModel
 from Vire.api.router_models.build import BuildReqResponse
-from BuildScheduler.shared.pub_redis import publish_log_redis
+from BuildScheduler.shared.logging.pub_redis import publish_log_redis
 
 router = APIRouter()
 

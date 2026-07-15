@@ -5,8 +5,8 @@ Functions:
     1. publish_job_log
 """
 
-from BuildScheduler.shared.pub_redis import publish_log_redis
-from BuildScheduler.shared.scheduler_logger import vire_logger
+from BuildScheduler.shared.logging.pub_redis import publish_log_redis
+from BuildScheduler.shared.logging.scheduler_logger import vire_logger
 from Vire.objects.dataclass_objects.validation_models import ValidatorContext, TOMLValidationParams
 
 

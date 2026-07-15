@@ -7,7 +7,7 @@ Functions -
 
 from Vire.objects.git_provider_adapter import PROVIDER_REGISTRY
 from Vire.utils.async_requests import send_request
-from BuildScheduler.shared.shared_state import valid_lockfiles, lockfile_matrix
+from BuildScheduler.shared.shared_state import shared_config, lockfile_matrix
 from Vire.errors import errors
 
 
@@ -35,7 +35,7 @@ async def fetch_lockfile_name(username: str, reponame: str, provider: str, commi
     
         for node in trees:
             path: str = node["path"]
-            if path not in valid_lockfiles:
+            if path not in shared_config.VALID_LOCKFILES:
                 continue
     
             if lockfile_matrix.get(path) != pm:

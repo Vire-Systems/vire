@@ -9,7 +9,7 @@ container_metadata: dict[str, str] = {
     "managed_by": "build_scheduler"
 }
 
-lockfile_matrix = {
+lockfile_matrix: dict[str, str] = {
     "package-lock.json": "npm",
     "pnpm-lock.yaml": "pnpm",
     "yarn.lock": "yarn",
@@ -17,7 +17,7 @@ lockfile_matrix = {
     "bun.lockb": "bun"
 }
 
-package_managers_list = (
+package_managers_list: tuple[str, ...] = (
     "npm",
     "pnpm",
     "yarn",

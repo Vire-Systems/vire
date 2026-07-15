@@ -19,6 +19,7 @@ VC-SC-001 - General exception ('catch all' statement. Internal error)
 VC-SC-002 - No job Data. Job data for requested job_uuid returned none
 VC-SC-003 - No job state. Job state for requested job uuid was not found.
 VC-SC-004 - Worker process creation failed (Internal Error)
+VC-SC-005 - Job terminated for exceeding the 5 minute limit.
 
 [vire.toml parsing errors]
 VC-VD-001 - Unsupported/Invalid framework error
@@ -45,6 +46,6 @@ VC-VD-032 - Branch does not exist. It was either removed or parsed incorrectly.
 VC-VD-033 - Same as VC-VD-014. Fetching the files from Git provider raw file api failed.
 VC-VD-034 - Same as VC-VD-005. Unsupported git provider (internal parsing failure)
 
-VC-GC-001 - Worker / Container process was collected by garbage collector for exceeding 5:15s.
+VC-GC-001 - Worker / Container process was collected by garbage collector for exceeding 5m 15s.
 
 VC-WK-001 - Broad catch / general internal failure 

@@ -6,7 +6,7 @@ Functions -
 1. check_toml_schema
 """
 
-from BuildScheduler.shared.scheduler_logger import vire_logger
+from BuildScheduler.shared.logging.scheduler_logger import vire_logger
 from Vire.project_manifest.errors.config_errors import InvalidVireToml
 from Vire.objects.dataclass_objects.validation_models import ParsedTOMLObject
 

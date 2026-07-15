@@ -9,11 +9,11 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from BuildScheduler.Scheduler.db.sqlite_orm.models import init_db
 from BuildScheduler.Scheduler.scheduler_loop import scheduler_loop
-from BuildScheduler.shared.scheduler_logger import vire_logger
-from BuildScheduler.shared.shared_state import core_id
+from BuildScheduler.shared.logging.scheduler_logger import vire_logger
+from BuildScheduler.shared.shared_state import shared_config
 
 from Vire.utils import async_requests
-from BuildScheduler.shared.pub_redis import r
+from BuildScheduler.shared.logging.pub_redis import r
 
 from Vire.api.routers import testrouter
 from Vire.api.routers.build import( build_req, cancel_build )
@@ -21,21 +21,21 @@ from Vire.api.routers.build import( build_req, cancel_build )
 @asynccontextmanager
 async def lifespan(app:FastAPI):
     """FastAPI lifespan CM"""
-    await vire_logger("info", "[Vire core] start up.")
+    vire_logger("info", "[Vire core] start up.")
     tasks = []
     await init_db()
     tasks.append(asyncio.create_task(scheduler_loop()))
     try:
         yield
     finally:
-        await vire_logger("info", "[Vire Core] shutting down.")
+        vire_logger("info", "[Vire Core] shutting down.")
         if not async_requests.client:
-            await vire_logger("info", "[async req setup] No client found. Ignoring aclose()...")
+            vire_logger("info", "[async req setup] No client found. Ignoring aclose()...")
         else:
             await async_requests.client.aclose()
-            await vire_logger("info" ,"[async req setup] client pool closed.")
+            vire_logger("info" ,"[async req setup] client pool closed.")
         await r.aclose()
-        await vire_logger("info" ,"[pub_redis] shared client closed.")
+        vire_logger("info" ,"[pub_redis] shared client closed.")
         for task in tasks:
             task.cancel()
         await asyncio.gather(*tasks, return_exceptions=True)
@@ -49,10 +49,10 @@ routers = [
 ]
 
 for router in routers:
-    app.include_router(router, prefix=f"/{core_id}/api/v1")
+    app.include_router(router, prefix=f"/{shared_config.CORE_ID}/api/v1")
 
 
 # Status
-@app.get(f"/{core_id}/api/status")
+@app.get(f"/{shared_config.CORE_ID}/api/status")
 async def api_status():
     return {"online": True}

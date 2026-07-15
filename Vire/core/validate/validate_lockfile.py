@@ -7,7 +7,8 @@ Functions -
 
 from textwrap import dedent
 
-from BuildScheduler.shared.shared_state import package_managers
+from BuildScheduler.shared.shared_state import package_managers_list
+
 from Vire.errors import errors
 from Vire.objects.dataclass_objects.validation_models import LockfileValidationParams, ValidatorContext
 from Vire.project_manifest.errors import config_errors
@@ -35,7 +36,7 @@ async def fetch_and_validate_lockfile(
     try:
         if LVP.install_req:
 
-            if LVP.package_manager not in package_managers:
+            if LVP.package_manager not in package_managers_list:
                 raise config_errors.PackageManagerException(f"The package manager provided ({LVP.package_manager}) isn't supported by Vire yet.")
 
             lockfile_name = await fetch_lockfile_name(

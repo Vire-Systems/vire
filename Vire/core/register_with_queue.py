@@ -3,7 +3,7 @@
 from BuildScheduler.Scheduler.db.caching.redis_registry import register_job_with_redis
 from BuildScheduler.Scheduler.db.sqlite_orm.crud import create
 
-from BuildScheduler.shared.scheduler_logger import vire_logger
+from BuildScheduler.shared.logging.scheduler_logger import vire_logger
 from Vire.core.validate_request import validate_details
 from Vire.models.pydantic_classes import BuildRequestModel
 from Vire.objects.dataclass_objects.validation_models import ValidatorContext
