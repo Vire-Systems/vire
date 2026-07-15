@@ -3,8 +3,6 @@ The main gc.py entrypoint.
 """
 
 import asyncio
-import traceback
-import docker
 import logging
 import os
 from dotenv import load_dotenv
@@ -17,7 +15,6 @@ from BuildScheduler.shared.logging.scheduler_logger import vire_logger
 from BuildScheduler.GC.utils.state import gc_config
 from BuildScheduler.shared.logging.pub_redis import r
 
-client = docker.from_env()
 logger = logging.getLogger(__name__)
 logfile_location = os.path.join(gc_config.LOGFILE_DIR, "gc.log")
 
