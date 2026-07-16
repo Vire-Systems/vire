@@ -146,7 +146,7 @@ class DockerRuntime(ContainerRuntime):
             raise ContainerAdapterAPIError from e
 
 
-    async def list_managed_containers(self, metadata: RuntimeMetadata, count: bool)-> int  | AsyncGenerator[str, None]:
+    async def list_managed_containers(self, metadata: RuntimeMetadata, count: bool, all: bool = False)-> int  | AsyncGenerator[str, None]:
         """
         Yields container names (aka job_uuid) of containers managed by vire from docker.
         """
@@ -159,7 +159,7 @@ class DockerRuntime(ContainerRuntime):
             }
             raw_container_list: list[Container] = await asyncio.to_thread(
                 client.containers.list,
-                all=False,
+                all=all,
                 filters=filter_labels
             )
 

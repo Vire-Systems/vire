@@ -9,7 +9,7 @@ from textwrap import dedent
 
 from BuildScheduler.shared.shared_state import package_managers_list
 
-from Vire.errors import errors
+from BuildScheduler.shared.errors import vire_errors as errors 
 from Vire.objects.dataclass_objects.validation_models import LockfileValidationParams, ValidatorContext
 from Vire.project_manifest.errors import config_errors
 from Vire.core.core_utils.fetch_lockfile import fetch_lockfile_name
@@ -111,7 +111,7 @@ async def fetch_and_validate_lockfile(
                 Fetched from: {common_line}
 
             Potential fixes:
-                Try setting 'dependencies=false' in vire.toml if installation of packages isn't needed for building the project.
+                1. Try setting 'dependencies=false' in vire.toml if installation of packages isn't needed for building the project.
             """,), "VC-VD-013")
 
     except errors.RepoFileFetchError as e:

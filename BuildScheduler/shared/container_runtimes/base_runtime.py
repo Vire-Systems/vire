@@ -90,7 +90,7 @@ class ContainerRuntime:
         """
         raise NotImplementedError
 
-    async def list_managed_containers(self, metadata: RuntimeMetadata, count: bool)-> int | AsyncGenerator[str, None]:
+    async def list_managed_containers(self, metadata: RuntimeMetadata, count: bool, all: bool =False)-> int | AsyncGenerator[str, None]:
         """
         Yields the names (aka job_uuid) of containers managed by Vire.
 
@@ -100,6 +100,7 @@ class ContainerRuntime:
         if count = True; Returns the number of said containers 
 
         Raises:
+        ContainerAdapterAPIError
         ------
         """
         if False:

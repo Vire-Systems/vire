@@ -8,7 +8,7 @@ Functions -
 from Vire.objects.git_provider_adapter import PROVIDER_REGISTRY
 from Vire.utils.async_requests import send_request
 from BuildScheduler.shared.shared_state import shared_config, lockfile_matrix
-from Vire.errors import errors
+from BuildScheduler.shared.errors import vire_errors as errors 
 
 
 async def fetch_lockfile_name(username: str, reponame: str, provider: str, commit_id: str, pm: str)-> str:
@@ -42,7 +42,7 @@ async def fetch_lockfile_name(username: str, reponame: str, provider: str, commi
                 continue
     
             if node["size"] == 0:
-                raise errors.EmptyLockfile(path)
+                raise errors.EmptyLockfile(error_title=path)
     
             if node["type"] != "blob":
                 continue
@@ -51,6 +51,6 @@ async def fetch_lockfile_name(username: str, reponame: str, provider: str, commi
     
         raise errors.NoLockfile()
     except KeyError as key_error:
-        raise errors.UnsupportedGitProvider(f"The framework provided ('{provider}') is not supported.") from key_error
+        raise errors.UnsupportedGitProvider(error_title=f"The framework provided ('{provider}') is not supported.") from key_error
     except errors.RepoFileFetchError as e:
         raise e

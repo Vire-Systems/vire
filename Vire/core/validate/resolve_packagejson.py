@@ -11,7 +11,7 @@ from Vire.utils.publish_job_log import publish_job_log
 from Vire.core.core_utils.fetch_buildreq import fetch_package_json
 from Vire.project_manifest.validator import validate_package_json
 
-from Vire.errors import errors
+from BuildScheduler.shared.errors import vire_errors as errors 
 from Vire.project_manifest.errors import config_errors
 from Vire.objects.dataclass_objects.validation_models import ValidatorContext, PkgJSONValidationParams
 
