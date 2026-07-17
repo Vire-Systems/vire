@@ -7,13 +7,14 @@ Functions -
 
 from fastapi import APIRouter
 
-from BuildScheduler.shared.logging.pub_redis import publish_log_redis
+from BuildScheduler.Scheduler.db.sqlite_orm.crud import read
+from shared.logging.pub_redis import publish_log_redis
 from Vire.api.router_models.build import CancelBuildResponse
 from Vire.core.cancel_build_req import terminate_workers
 from Vire.models.pydantic_classes import BuildCancelModel
-from BuildScheduler.Scheduler.db.sqlite_orm.crud import read
 
 router = APIRouter()
+
 
 @router.post("/build/cancel_build")
 async def cancel_build_req(BCM: BuildCancelModel):
@@ -22,13 +23,13 @@ async def cancel_build_req(BCM: BuildCancelModel):
             data = await read.fetch_build_data(job_uuid=job_uuid)
             if not data:
                 return {"success": False, "reason": "Job State fetch unsuccessful."}
-    
+
             if not data.user_uuid == BCM.user_uuid:
                 return {"success": False}
             await publish_log_redis(f"Jobs {BCM.job_uuids} cancelled.", BCM.user_uuid, job_uuid)
 
         await terminate_workers(job_uuids=BCM.job_uuids)
-        
+
         return CancelBuildResponse(success=True)
     except Exception:
         return CancelBuildResponse(success=False)

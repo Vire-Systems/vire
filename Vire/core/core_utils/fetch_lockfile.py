@@ -7,8 +7,8 @@ Functions -
 
 from Vire.objects.git_provider_adapter import PROVIDER_REGISTRY
 from Vire.utils.async_requests import send_request
-from BuildScheduler.shared.shared_state import shared_config, lockfile_matrix
-from BuildScheduler.shared.errors import vire_errors as errors 
+from shared.shared_state import shared_config, lockfile_matrix
+from shared.errors import vire_errors as errors 
 
 
 async def fetch_lockfile_name(username: str, reponame: str, provider: str, commit_id: str, pm: str)-> str:

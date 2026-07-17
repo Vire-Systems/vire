@@ -5,18 +5,20 @@ The main gc.py entrypoint.
 import asyncio
 import logging
 import os
+
 from dotenv import load_dotenv
 
 load_dotenv("/home/vire/vire/.env")
 
 from BuildScheduler.GC.core.delete_containers import batch_remove
-from BuildScheduler.shared.logging.logger_setup import setup_async_logging, stop_async_logging
-from BuildScheduler.shared.logging.scheduler_logger import vire_logger
 from BuildScheduler.GC.utils.state import gc_config
-from BuildScheduler.shared.logging.pub_redis import r
+from shared.logging.logger_setup import setup_async_logging, stop_async_logging
+from shared.logging.pub_redis import r
+from shared.logging.scheduler_logger import vire_logger
 
 logger = logging.getLogger(__name__)
 logfile_location = os.path.join(gc_config.LOGFILE_DIR, "gc.log")
+
 
 async def gc_core_loop():
     """The core GC loop. Asynchronous."""
@@ -24,7 +26,7 @@ async def gc_core_loop():
         while True:
             try:
                 await batch_remove()
-    
+
             except Exception as e:
                 vire_logger("critical", "[GC gc_core_loop] Unable to collect. Details: %s", e)
 

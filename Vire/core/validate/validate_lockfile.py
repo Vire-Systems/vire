@@ -7,9 +7,9 @@ Functions -
 
 from textwrap import dedent
 
-from BuildScheduler.shared.shared_state import package_managers_list
+from shared.shared_state import package_managers_list
 
-from BuildScheduler.shared.errors import vire_errors as errors 
+from shared.errors import vire_errors as errors 
 from Vire.objects.dataclass_objects.validation_models import LockfileValidationParams, ValidatorContext
 from Vire.project_manifest.errors import config_errors
 from Vire.core.core_utils.fetch_lockfile import fetch_lockfile_name

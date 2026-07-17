@@ -7,32 +7,34 @@ Functions-
 2. validate_toml (async)
 """
 
-import re
 import json
-from Vire.utils.state import available_frameworks
+import re
+
+from shared.shared_state import lockfile_matrix
 from Vire.project_manifest.errors import config_errors
-from BuildScheduler.shared.shared_state import lockfile_matrix
+from Vire.utils.state import available_frameworks
 
 # frameworks vite, astro, vue, react, sveltekit, nextjs, nuxtjs, 11ty
 # pms: npm, pnpm, yarn, bun
 
+
 # package.json
-async def validate_package_json(package_json_str: str)-> bool:
+async def validate_package_json(package_json_str: str) -> bool:
     """
     Validates package.json and raises errors mentioned below. Is a Helper called by 'validate_toml'.
-    
+
     Args:
         package.json - str
 
     Behavior:
         Returns False if "{"preinstall", "postinstall", "install", "prepare", "prepublish"}" is present in pacakge.json[scripts].
-    
+
     Raises:
         config_errors.InvalidPackageJson
     """
     try:
         package_json = json.loads(package_json_str)
-        blocked_keys = {"start","preinstall", "postinstall", "install", "prepare", "prepublish"}
+        blocked_keys = {"start", "preinstall", "postinstall", "install", "prepare", "prepublish"}
         scripts = package_json.get("scripts", {})
         found_keys = [key for key in blocked_keys if key in scripts]
 
@@ -45,16 +47,18 @@ async def validate_package_json(package_json_str: str)-> bool:
     except config_errors.InvalidPackageJson:
         raise
     except Exception as e:
-        raise config_errors.InvalidPackageJson(f"Encountered unexpected errors while attempting to parse package.json. Details: {type(e).__name__}") from e
+        raise config_errors.InvalidPackageJson(
+            f"Encountered unexpected errors while attempting to parse package.json. Details: {type(e).__name__}"
+        ) from e
 
 
 # TOML
-async def validate_toml(lockfile_name: str | None, package_manager: str, output_dir: str, framework: str)-> None:
+async def validate_toml(lockfile_name: str | None, package_manager: str, output_dir: str, framework: str) -> None:
     """
     Validates the vire.toml file.
 
     Raises -
-        
+
     'PackageManagerException' -
         1. if the given package_manager (arg) is invalid (unsupported).
         2. if lockfile given does not match the lockfile of the provided package manager.
@@ -66,7 +70,9 @@ async def validate_toml(lockfile_name: str | None, package_manager: str, output_
         1. If framework is not in FRAMEWORK_REGISTRY's keys.
     """
     if framework.lower() not in available_frameworks:
-        raise config_errors.UnsupportedFrameworkError(f"The framework provided ({framework}) is either unsupported or invalid.")
+        raise config_errors.UnsupportedFrameworkError(
+            f"The framework provided ({framework}) is either unsupported or invalid."
+        )
 
     if lockfile_name:
         if lockfile_matrix.get(lockfile_name) != package_manager:

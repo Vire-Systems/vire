@@ -13,9 +13,9 @@ from BuildScheduler.Scheduler.dataclass_models.scheduler_dc import WorkerCreatio
 from BuildScheduler.Scheduler.db.sqlite_orm.crud import update
 from BuildScheduler.Scheduler.errors.db_errors import NoJobStateError
 from BuildScheduler.Scheduler.manage_worker.del_container import delayed_delete
-from BuildScheduler.shared.logging.pub_redis import publish_log_redis
 from BuildScheduler.Scheduler.utils.state import scheduler_config
-from BuildScheduler.shared.logging.scheduler_logger import vire_logger
+from shared.logging.pub_redis import publish_log_redis
+from shared.logging.scheduler_logger import vire_logger
 
 
 async def create_worker_process(WCP: WorkerCreationParams) -> None:
@@ -75,7 +75,7 @@ async def create_worker_process(WCP: WorkerCreationParams) -> None:
         try:
             process = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             await update.update_job_status(job_uuid=WCP.job_uuid, status_msg="running", PID=process.pid)
-            await delayed_delete(job_uuid= WCP.job_uuid, user_uuid=WCP.user_uuid)
+            await delayed_delete(job_uuid=WCP.job_uuid, user_uuid=WCP.user_uuid)
 
         except NoJobStateError:
             vire_logger(

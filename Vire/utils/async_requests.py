@@ -7,7 +7,7 @@ Functions -
 
 import asyncio
 import httpx
-from BuildScheduler.shared.errors import vire_errors as errors 
+from shared.errors import vire_errors as errors 
 
 MAX_CONCURRENT = 50
 TIMEOUT = 5

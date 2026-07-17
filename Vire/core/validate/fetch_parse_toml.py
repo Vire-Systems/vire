@@ -12,7 +12,7 @@ from tomllib import TOMLDecodeError
 from Vire.core.core_utils.fetch_buildreq import fetch_vire_toml
 from Vire.project_manifest.parse_toml import parse_toml
 from Vire.project_manifest.errors import config_errors
-from BuildScheduler.shared.errors import vire_errors as errors 
+from shared.errors import vire_errors as errors 
 from Vire.utils.publish_job_log import publish_job_log
 
 from Vire.objects.dataclass_objects.validation_models import ValidatorContext, ParsedTOMLObject

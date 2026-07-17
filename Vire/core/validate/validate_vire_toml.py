@@ -7,13 +7,14 @@ Functions -
 
 from textwrap import dedent
 
-from BuildScheduler.shared.shared_state import lockfile_matrix
+from shared.shared_state import lockfile_matrix
+from Vire.objects.dataclass_objects.validation_models import ParsedTOMLObject, TOMLValidationParams, ValidatorContext
 from Vire.project_manifest.errors import config_errors
-from Vire.objects.dataclass_objects.validation_models import TOMLValidationParams, ValidatorContext, ParsedTOMLObject
 from Vire.project_manifest.validator import validate_toml
 from Vire.utils.publish_job_log import publish_job_log
 
-async def validate_vire_toml(TVP: TOMLValidationParams, VC: ValidatorContext, PTO: ParsedTOMLObject)-> bool | None:
+
+async def validate_vire_toml(TVP: TOMLValidationParams, VC: ValidatorContext, PTO: ParsedTOMLObject) -> bool | None:
     """
     Validates vire.toml fetched from the user's repo.
 
@@ -29,14 +30,15 @@ async def validate_vire_toml(TVP: TOMLValidationParams, VC: ValidatorContext, PT
             lockfile_name=TVP.lockfile_name,
             package_manager=PTO.package_manager,
             output_dir=PTO.output_dir,
-            framework=PTO.framework
+            framework=PTO.framework,
         )
         return True
 
     # Error handling
     except config_errors.UnsupportedFrameworkError as e:
-        await publish_job_log(dedent(
-            f"""
+        await publish_job_log(
+            dedent(
+                f"""
             Error: VC-VD-021. Unable to validate vire.toml.
             Timestamp: {TVP.ts}
 
@@ -48,13 +50,16 @@ async def validate_vire_toml(TVP: TOMLValidationParams, VC: ValidatorContext, PT
             Suggested fixes:
                 1. Upload file in HTML.
                 2. Try other supported frameworks available in docs.
-            """),
-        error_code="VC-VD-021")
+            """
+            ),
+            error_code="VC-VD-021",
+        )
 
     except config_errors.PackageManagerException as e:
         expected_pm = lockfile_matrix[TVP.lockfile_name] if TVP.lockfile_name else "Unsupported PM"
-        await publish_job_log(dedent(
-            f"""
+        await publish_job_log(
+            dedent(
+                f"""
             Error: VC-VD-022. PM and lockfile do not match.
             Timestamp: {TVP.ts}
 
@@ -72,11 +77,15 @@ async def validate_vire_toml(TVP: TOMLValidationParams, VC: ValidatorContext, PT
 
             Suggested fixes:
                 1. Run npm install and commit the lockfile and delete the old one.
-            """), "VC-VD-022")
+            """
+            ),
+            "VC-VD-022",
+        )
 
     except config_errors.InvalidOutDir as e:
-        await publish_job_log(dedent(
-            f"""
+        await publish_job_log(
+            dedent(
+                f"""
             Error: VC-VD-023. Invalid symbols for output directory.
             Timestamp: {TVP.ts}
 
@@ -89,4 +98,7 @@ async def validate_vire_toml(TVP: TOMLValidationParams, VC: ValidatorContext, PT
             Errors caused by:
                 Output Dir: {PTO.output_dir}
                 Issues: {str(e)}
-            """), "VC-VD-023")
+            """
+            ),
+            "VC-VD-023",
+        )

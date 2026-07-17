@@ -7,19 +7,15 @@ Functions -
 
 from textwrap import dedent
 
-from Vire.utils.publish_job_log import publish_job_log
+from shared.errors import vire_errors as errors
 from Vire.core.core_utils.fetch_buildreq import fetch_package_json
-from Vire.project_manifest.validator import validate_package_json
-
-from BuildScheduler.shared.errors import vire_errors as errors 
+from Vire.objects.dataclass_objects.validation_models import PkgJSONValidationParams, ValidatorContext
 from Vire.project_manifest.errors import config_errors
-from Vire.objects.dataclass_objects.validation_models import ValidatorContext, PkgJSONValidationParams
+from Vire.project_manifest.validator import validate_package_json
+from Vire.utils.publish_job_log import publish_job_log
 
 
-async def fetch_and_validate_pkgjson(
-    VC: ValidatorContext,
-    PJVP: PkgJSONValidationParams
-)-> bool | None:
+async def fetch_and_validate_pkgjson(VC: ValidatorContext, PJVP: PkgJSONValidationParams) -> bool | None:
     """
     Fetches and validates the package.json from user's repo & branch.
 
@@ -37,8 +33,9 @@ async def fetch_and_validate_pkgjson(
         return True
 
     except config_errors.InvalidPackageJson as e:
-        await publish_job_log(dedent(
-            f"""
+        await publish_job_log(
+            dedent(
+                f"""
             Error: VC-VD-031. Invalid 'package.json'.
             Timestamp: {PJVP.ts}
 
@@ -50,12 +47,16 @@ async def fetch_and_validate_pkgjson(
             Errors caused by:
                 Issue: {e}
 
-            The scripts in 'package.json' cannot be accepted by Vire. 
-            """), "VC-VD-031")
+            The scripts in 'package.json' cannot be accepted by Vire.
+            """
+            ),
+            "VC-VD-031",
+        )
 
     except errors.InvalidBranchError:
-        await publish_job_log(dedent(
-            f"""
+        await publish_job_log(
+            dedent(
+                f"""
             Error: VC-VD-032. Branch does not exist.
             Timestamp: {PJVP.ts}
 
@@ -68,11 +69,15 @@ async def fetch_and_validate_pkgjson(
                 1. In the case of branch deletion, retry.
 
             If branch exists and you see this error, create an issue on GitHub regarding this. (Internal parsing error)
-            """), "VC-VD-032")
+            """
+            ),
+            "VC-VD-032",
+        )
 
     except errors.RepoFileFetchError as e:
-        await publish_job_log(dedent(
-            f"""
+        await publish_job_log(
+            dedent(
+                f"""
             Error: VC-VD-033. File fetch from remote failed.
             Timestamp: {PJVP.ts}
 
@@ -87,11 +92,15 @@ async def fetch_and_validate_pkgjson(
                 1. Check {VC.provider.capitalize()}'s status
                 2. Could be caused by the package.json file being malformed.
                 3. Outdated Commit SHA because something was pushed right after the build started (1-3s delay between pushes.)
-            """), "VC-VD-033")
+            """
+            ),
+            "VC-VD-033",
+        )
 
     except errors.UnsupportedGitProvider as e:
-        await publish_job_log(dedent(
-            f"""
+        await publish_job_log(
+            dedent(
+                f"""
             Error: VC-VD-034. Unsupported git provider {VC.provider.capitalize()}.
             Timestamp: {PJVP.ts}
 
@@ -100,4 +109,7 @@ async def fetch_and_validate_pkgjson(
                 Commit SHA: {VC.commit_id}
                 Branch Name: {VC.branch}
                 Issue: {e}
-            """), "VC-VD-034")
+            """
+            ),
+            "VC-VD-034",
+        )

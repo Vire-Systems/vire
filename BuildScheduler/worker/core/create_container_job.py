@@ -8,20 +8,19 @@ Functions -
 """
 
 import asyncio
-from textwrap import dedent
 import time
-
-from BuildScheduler.shared.container_runtimes.runtime_dc import RuntimeMetadata
-from BuildScheduler.shared.logging.scheduler_logger import vire_logger
-from BuildScheduler.shared.shared_state import shared_config
-from BuildScheduler.worker.schema.worker_dataclasses import WorkerContext
-from BuildScheduler.worker.utils.state import worker_config
-from BuildScheduler.shared.logging.pub_redis import publish_log_redis
+from textwrap import dedent
 
 from BuildScheduler.worker.schema.errors import ContainerCreationFail, InstallReqMismatch, UnsupportedFramework
-from BuildScheduler.shared.container_runtimes.runtime_registry import RUNTIME_REGISTRY
-from BuildScheduler.shared.container_runtimes.base_runtime import ContainerRuntime
+from BuildScheduler.worker.schema.worker_dataclasses import WorkerContext
 from BuildScheduler.worker.utils.adapter import FRAMEWORK_REGISTRY
+from BuildScheduler.worker.utils.state import worker_config
+from shared.container_runtimes.base_runtime import ContainerRuntime
+from shared.container_runtimes.runtime_dc import RuntimeMetadata
+from shared.container_runtimes.runtime_registry import RUNTIME_REGISTRY
+from shared.logging.pub_redis import publish_log_redis
+from shared.logging.scheduler_logger import vire_logger
+from shared.shared_state import shared_config
 
 
 # Helper
@@ -69,6 +68,7 @@ def setup_creation(worker_context: WorkerContext) -> tuple[str, str]:
         vire_logger("critical", "[worker setup_creation] Unable to initialize setup. Details: %s", e)
         raise e
 
+
 async def container_create(worker_context: WorkerContext) -> None:
     """
     Creates a container task and streams the container logs.
@@ -87,42 +87,35 @@ async def container_create(worker_context: WorkerContext) -> None:
             raise ContainerCreationFail(f"{'Image' if not image else 'cmd'} Cannot be none.")
         cmd = ["sh", "-c", cmd_body]
 
-        runtime_metadata = RuntimeMetadata(
-            **shared_config.CONTAINER_METADATA,
-            expires_at = str(expires_at)
-        )
+        runtime_metadata = RuntimeMetadata(**shared_config.CONTAINER_METADATA, expires_at=str(expires_at))
 
         container_task = asyncio.to_thread(
-            runtime.create, 
-            job_uuid= worker_context.job_uuid,
-            image= image,
-            cmd= cmd,
-            metadata= runtime_metadata
+            runtime.create, job_uuid=worker_context.job_uuid, image=image, cmd=cmd, metadata=runtime_metadata
         )
         await container_task
         container_log_generator = runtime.get_container_log(worker_context.job_uuid)
 
         for line in container_log_generator:
             str_line = line.decode("utf-8")
-            await publish_log_redis(
-                str_line,
-                user_uuid= worker_context.user_uuid,
-                job_uuid=worker_context.job_uuid
-            )
+            await publish_log_redis(str_line, user_uuid=worker_context.user_uuid, job_uuid=worker_context.job_uuid)
 
     except ContainerCreationFail as e:
         await publish_log_redis(
             line=dedent(
                 """
-                VC-WK-001. Internal error. 
+                VC-WK-001. Internal error.
 
                 Note: Configuration error. If you see this, open an issue on github with a screenshot.
-                """),
-            user_uuid= worker_context.user_uuid, job_uuid=worker_context.job_uuid
+                """
+            ),
+            user_uuid=worker_context.user_uuid,
+            job_uuid=worker_context.job_uuid,
         )
         vire_logger("critical", "Container creation failed. Details: %s", str(e))
     except Exception as e:
         vire_logger(
-            "critical", "[container_create] Container creation for job '%s' was unsucessful. Details: %s",
-            worker_context.job_uuid, e
+            "critical",
+            "[container_create] Container creation for job '%s' was unsucessful. Details: %s",
+            worker_context.job_uuid,
+            e,
         )

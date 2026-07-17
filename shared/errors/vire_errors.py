@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from typing import Literal
-from BuildScheduler.shared.errors.base_error import VireBaseError
+from shared.errors.base_error import VireBaseError
 
 # Note: The comments on top of each class is for separating the classes at a glance
 

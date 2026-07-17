@@ -1,17 +1,17 @@
 """The utility module used for dispatching queued jobs."""
 
-from typing import Literal
 import asyncio
+from typing import Literal
 
 from BuildScheduler.Scheduler.core.core_utilities.make_worker import scheduler_create_worker
 from BuildScheduler.Scheduler.utils import queues_locks
-from BuildScheduler.shared.container_runtimes.runtime_dc import RuntimeMetadata
-from BuildScheduler.shared.container_runtimes.runtime_registry import RUNTIME_REGISTRY
-from BuildScheduler.shared.logging.scheduler_logger import vire_logger
-from BuildScheduler.shared.shared_state import shared_config
+from shared.container_runtimes.runtime_dc import RuntimeMetadata
+from shared.container_runtimes.runtime_registry import RUNTIME_REGISTRY
+from shared.logging.scheduler_logger import vire_logger
+from shared.shared_state import shared_config
 
 
-async def get_worker_count(fetch_all = False)-> int:
+async def get_worker_count(fetch_all=False) -> int:
     """
     Fetch active worker count from docker API.
 
@@ -21,17 +21,14 @@ async def get_worker_count(fetch_all = False)-> int:
     """
     runtime = RUNTIME_REGISTRY[shared_config.CONTAINER_RUNTIME]()
 
-    metadata = RuntimeMetadata(
-        **shared_config.CONTAINER_METADATA,
-        expires_at = None
-    )
+    metadata = RuntimeMetadata(**shared_config.CONTAINER_METADATA, expires_at=None)
     count_managed_containers = await runtime.list_managed_containers(metadata, count=True)
     if not isinstance(count_managed_containers, int):
         raise ValueError(f"The value of count_managed_containers is invalid. {count_managed_containers=}")
     return count_managed_containers
 
 
-async def launch_workers(job_uuids: list[str])-> None:
+async def launch_workers(job_uuids: list[str]) -> None:
     """Launch the same number of workers as the length of job_uuids."""
     task_list: list[asyncio.Task[None]] = []
 
@@ -40,7 +37,7 @@ async def launch_workers(job_uuids: list[str])-> None:
     await asyncio.gather(*task_list)
 
 
-async def dispatch_queued_job(available_slots: int)-> Literal["queued", "started"] | None:
+async def dispatch_queued_job(available_slots: int) -> Literal["queued", "started"] | None:
     """
     Dispatch the number of jobs (available_slots) which are queued in SQLite DB.
     """
@@ -55,9 +52,11 @@ async def dispatch_queued_job(available_slots: int)-> Literal["queued", "started
                 job_uuids.append(job_uuid)
             except asyncio.QueueEmpty:
                 if len(job_uuids) != 0:
-                    vire_logger("info",
+                    vire_logger(
+                        "info",
                         "Not enough queued processes to spawn. Available slots: %i. Number of spawned processes: %i",
-                        available_slots, len(job_uuids)
+                        available_slots,
+                        len(job_uuids),
                     )
                 break
     await launch_workers(job_uuids=job_uuids)

@@ -1,13 +1,13 @@
-
 import asyncio
 
 from BuildScheduler.Scheduler.db.sqlite_orm.crud import update
-from BuildScheduler.shared.container_runtimes.runtime_registry import RUNTIME_REGISTRY
-from BuildScheduler.shared.logging.scheduler_logger import vire_logger
-from BuildScheduler.shared.shared_state import shared_config
+from shared.container_runtimes.runtime_registry import RUNTIME_REGISTRY
+from shared.logging.scheduler_logger import vire_logger
+from shared.shared_state import shared_config
+
 
 async def terminate_worker(job_uuid: str):
-    
+
     runtime = RUNTIME_REGISTRY[shared_config.CONTAINER_RUNTIME]()
 
     await update.update_job_status(job_uuid=job_uuid, status_msg="cancelled")

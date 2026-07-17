@@ -7,7 +7,7 @@ Functions -
 """
 
 from Vire.objects.git_provider_adapter import PROVIDER_REGISTRY
-from BuildScheduler.shared.errors import vire_errors as errors 
+from shared.errors import vire_errors as errors 
 from Vire.utils.async_requests import send_request
 
 
