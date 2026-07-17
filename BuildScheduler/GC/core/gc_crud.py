@@ -14,7 +14,7 @@ async def get_user_uuid(job_uuid: str)-> str | None:
         return user_uuid[0]
 
 async def update_job_status(
-    job_uuids: list[str],
+    job_uuids: str,
     status="terminated",
     error_code: str | None = None
 )-> None:

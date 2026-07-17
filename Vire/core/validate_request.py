@@ -39,11 +39,11 @@ async def validate_details(VC: ValidatorContext)-> ParsedTOMLObject | None:
     
         1. InvalidBranchError (fetch_vire_toml)
         2. InvalidVireToml (parse_toml)
-        3. EmptyLockfile, KeyErrror, NoLockfile (fetch_lockfile)
+        3. EmptyLockfile, KeyErrror, NoLockfileError (fetch_lockfile)
         4. InvalidPackageJson, PackageManagerException, InvalidOutDir (validate_toml)
         5. InvalidBranchError (fetch_package_json)
         6. InvalidPackageJson (validate_package_json)
-        7. UnsupportedGitProvider (fetch_vire_toml, fetch_package_json, fetch_lockfile_name)
+        7. UnsupportedGitProviderError (fetch_vire_toml, fetch_package_json, fetch_lockfile_name)
     """
     
     # Helper for datetime string

@@ -15,7 +15,7 @@ class SchedulerConfig:
     CONTAINER_REMOVAL_DELAY: int
 
 @dataclass(frozen=True, slots=True)
-class WorkerCreationParams():
+class WorkerCreationParams:
     """
     Params for create_worker_process function. Returned with data by CRUD's fetch_worker_data function.
 

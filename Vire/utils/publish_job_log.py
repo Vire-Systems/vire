@@ -22,4 +22,4 @@ async def publish_job_log(
     """
     # TODO: Add postgres status updation here.
     await publish_log_redis(line=f"{ts} : {line}", user_uuid=user_uuid, job_uuid=job_uuid)
-    await vire_logger("info", f"Error code: '{error_code}' for job_uuid: '{job_uuid}'")
+    vire_logger("info", f"Error code: '{error_code}' for job_uuid: '{job_uuid}'")

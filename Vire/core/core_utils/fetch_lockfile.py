@@ -23,7 +23,7 @@ async def fetch_lockfile_name(username: str, reponame: str, provider: str, commi
     Raises -
         1. EmptyLockfile
         2. Keyerror (rare but possible if git_tree_node["path"] or git_tree_req.json()["trees"] does not exist.)
-        3. NoLockfile
+        3. NoLockfileError
     """
     try:
         adapter = PROVIDER_REGISTRY[provider]
@@ -49,8 +49,8 @@ async def fetch_lockfile_name(username: str, reponame: str, provider: str, commi
                 
             return path
     
-        raise errors.NoLockfile()
+        raise errors.NoLockfileError()
     except KeyError as key_error:
-        raise errors.UnsupportedGitProvider(error_title=f"The framework provided ('{provider}') is not supported.") from key_error
+        raise errors.UnsupportedGitProviderError(error_title=f"The framework provided ('{provider}') is not supported.") from key_error
     except errors.RepoFileFetchError as e:
         raise e

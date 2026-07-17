@@ -95,7 +95,7 @@ async def fetch_and_parse_toml(VC: ValidatorContext, ts: str)-> ParsedTOMLObject
                 Issue: {e}
             """), "VC-VD-004")
 
-    except errors.UnsupportedGitProvider as e:
+    except errors.UnsupportedGitProviderError as e:
         await publish_job_log(dedent(
             f"""
             Error: VC-VD-005. The git provider '{VC.provider}' is not supported.

@@ -28,7 +28,7 @@ async def fetch_vire_toml(
         5. branch - Latest branch which was pushed.
     
     Raises -
-        InvalidBranchError, RepoFileFetchError, UnsupportedGitProvider
+        InvalidBranchError, RepoFileFetchError, UnsupportedGitProviderError
     Catches -
         Broad 'Exception'
     """
@@ -44,7 +44,7 @@ async def fetch_vire_toml(
         return toml_str
 
     except KeyError as KE:
-        raise errors.UnsupportedGitProvider(error_title=f"The Git provider '{provider}' is not supported yet.") from KE
+        raise errors.UnsupportedGitProviderError(error_title=f"The Git provider '{provider}' is not supported yet.") from KE
     except errors.InvalidBranchError:
         raise
     except errors.RepoFileFetchError:
@@ -71,7 +71,7 @@ async def fetch_package_json(
         5. branch - Latest branch which was pushed.
 
     Raises -
-        InvalidBranchError, RepoFileFetchError, UnsupportedGitProvider
+        InvalidBranchError, RepoFileFetchError, UnsupportedGitProviderError
     """
     try:
         adapter = PROVIDER_REGISTRY[provider]
@@ -85,7 +85,7 @@ async def fetch_package_json(
     
         return packagejson_str
     except KeyError as KE:
-        raise errors.UnsupportedGitProvider(error_title=f"The Git provider '{provider}' is not supported yet.") from KE
+        raise errors.UnsupportedGitProviderError(error_title=f"The Git provider '{provider}' is not supported yet.") from KE
         
     except errors.InvalidBranchError as e:
         raise e

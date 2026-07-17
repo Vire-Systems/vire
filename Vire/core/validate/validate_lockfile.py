@@ -98,7 +98,7 @@ async def fetch_and_validate_lockfile(
                 {VC.provider.capitalize()}'s git tree api returned malformed JSON. 
             """), "VC-VD-011")
 
-    except errors.NoLockfile:
+    except errors.NoLockfileError:
         await publish_job_log(dedent(
             f"""
             Error: VC-VD-013. No lockfile.

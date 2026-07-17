@@ -97,7 +97,7 @@ async def fetch_and_validate_pkgjson(VC: ValidatorContext, PJVP: PkgJSONValidati
             "VC-VD-033",
         )
 
-    except errors.UnsupportedGitProvider as e:
+    except errors.UnsupportedGitProviderError as e:
         await publish_job_log(
             dedent(
                 f"""

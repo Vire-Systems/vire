@@ -11,75 +11,76 @@ class InvalidBranchError(VireBaseError):
     Raise for Invalid / Unprovided branches
     """
 
-    error_title: str = "VC-VD-002. Unable to fetch vire.toml. The provided branch was invalid."
+    error_title: str = "Unable to fetch vire.toml. The provided branch was invalid."
     error_code: str = "VC-VD-002"
     severity: Literal[
         'info', 'warn', 'error', 'critical', 'exit'
     ] = "warn"
 
-    internal_log_body: str = "The provided branch was invalid."
+    internal_log_body: str = "The provided branch was invalid"
     build_state: str = "failed_validation"
 
-    possible_causes: tuple[str] | None = (
-        "1. Branch was deleted right after triggering the Vire webhook.",
+    possible_causes: tuple[str, ...] | None = (
+        "Branch was deleted right after triggering the Vire webhook.",
     )
 
 
 # Unsupported PMs --
 @dataclass(slots=True, kw_only=True)
-class UnsupportedPackageManager(VireBaseError):
-    """Raise for unsupported pms."""
+class UnsupportedPMError(VireBaseError):
+    """Raise for unsupported package managers"""
 
     error_code: str = "VC-VD-015"
-    error_title: str = "VC-VD-015. Unsupported package manager."
+    error_title: str = "Unsupported package manager. The PM provided is unsupported."
 
     severity: Literal[
         'info', 'warn', 'error', 'critical', 'exit'
     ] = "warn"
 
-    internal_log_body: str = "The provided branch was invalid."
+    internal_log_body: str = "The package manager provided by the user is invalid"
     build_state: str = "failed_validation"
 
 
 # Empty lockfile --
 @dataclass(slots=True, kw_only=True)
-class EmptyLockfile(VireBaseError):
+class EmptyLockfileError(VireBaseError):
     """Raise when lockfile is empty."""
 
     error_code: str = "VC-VD-012"
-    error_title: str = "Error: VC-VD-012. Empty lockfile."
+    error_title: str = "Empty lockfile in the provided branch."
 
     severity: Literal[
         'info', 'warn', 'error', 'critical', 'exit'
     ] = "warn"
 
-    internal_log_body: str = "The logfile is empty for the job specified."
+    internal_log_body: str = "A logfile found, but it is empty. Details below"
     build_state: str = "failed_validation"
 
 
 # No lockfile --
 @dataclass(slots=True, kw_only=True)
-class NoLockfile(VireBaseError):
+class NoLockfileError(VireBaseError):
     """Raise when unable to find a lockfile."""
 
     error_code: str = "VC-VD-013"
-    error_title: str = "Error: VC-VD-013. No lockfile."
+    error_title: str = "No lockfile found in the branch. Details below"
 
     severity: Literal[
         'info', 'warn', 'error', 'critical', 'exit'
     ] = "warn"
 
-    internal_log_body: str = "Found no logfile for the job specified."
+    internal_log_body: str = "Found no logfile for the job specified"
     build_state: str = "failed_validation"
 
     possible_fixes: tuple[str, ...] | None = (
-        "1. Try setting 'dependencies=false' in vire.toml if installation of packages isn't needed for building the project.",
+        "Try setting 'dependencies=false' in vire.toml if installation of packages isn't needed for building the project.",
+        "Try running `npm in`"
     )
 
 
 # Unsupported Git providers --
 @dataclass(slots=True, kw_only=True)
-class UnsupportedGitProvider(VireBaseError):
+class UnsupportedGitProviderError(VireBaseError):
     """Raise when the git provider isn't supported."""
     error_code: str = "VC-VD-005"
     error_title: str = "The git provider specified is not supported."
@@ -92,7 +93,7 @@ class UnsupportedGitProvider(VireBaseError):
     build_state: str = "failed_validation"
 
     notes: tuple[str, ...] | None = (
-        "1. Check docs for the details of this error.",
+        "Check documentation for the details of this error.",
     )
 
 
