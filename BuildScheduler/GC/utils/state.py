@@ -18,5 +18,6 @@ gc_config = GCConfig(
     LOGFILE_DIR = os.environ["GC_LOGDIR"],
     REDIS_URL = os.environ["REDIS_URL"],
     DB_PATH = os.environ["DB_PATH"],
-    LOG_LEVEL = logging.INFO
+    LOG_LEVEL = logging.INFO,
+    CONTAINER_REMOVAL_DELAY=int(os.environ["CONTAINER_REMOVAL_DELAY"])
 )

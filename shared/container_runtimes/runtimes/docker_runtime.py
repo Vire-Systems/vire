@@ -18,7 +18,7 @@ from docker.errors import APIError, NotFound
 from docker.models.containers import Container
 
 from shared.container_runtimes.base_runtime import ContainerRuntime
-from shared.container_runtimes.errors import (
+from shared.errors.container_runtime_errors import (
     ContainerAdapterAPIError,
     ContainerCreationFail,
     ContainerNotFound,

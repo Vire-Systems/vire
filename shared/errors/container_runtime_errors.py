@@ -1,3 +1,7 @@
+"""
+The Vire exceptions raised to abstract the Container rutime adapter's specific errors.
+"""
+
 class ContainerCreationFail(Exception):
     """Raised when creating a container fails."""
 
