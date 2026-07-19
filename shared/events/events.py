@@ -15,9 +15,3 @@ class GCReapEvent(VireBaseEvent):
 
     write_log: bool = True
     propagate_state: bool = True
-
-e = GCReapEvent(
-    job_uuid="test", user_uuid="sparrow", summary="summary"
-)
-
-print(e)

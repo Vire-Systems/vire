@@ -17,9 +17,6 @@ class InvalidBranchError(VireBaseError):
         'info', 'warn', 'error', 'critical', 'exit'
     ] = "warn"
 
-    internal_log_body: str = "The provided branch was invalid"
-    build_state: str = "failed_validation"
-
     possible_causes: tuple[str, ...] | None = (
         "Branch was deleted right after triggering the Vire webhook.",
     )
@@ -37,9 +34,6 @@ class UnsupportedPMError(VireBaseError):
         'info', 'warn', 'error', 'critical', 'exit'
     ] = "warn"
 
-    internal_log_body: str = "The package manager provided by the user is invalid"
-    build_state: str = "failed_validation"
-
 
 # Empty lockfile --
 @dataclass(slots=True, kw_only=True)
@@ -52,9 +46,6 @@ class EmptyLockfileError(VireBaseError):
     severity: Literal[
         'info', 'warn', 'error', 'critical', 'exit'
     ] = "warn"
-
-    internal_log_body: str = "A logfile found, but it is empty. Details below"
-    build_state: str = "failed_validation"
 
 
 # No lockfile --
@@ -69,8 +60,6 @@ class NoLockfileError(VireBaseError):
         'info', 'warn', 'error', 'critical', 'exit'
     ] = "warn"
 
-    internal_log_body: str = "Found no logfile for the job specified"
-    build_state: str = "failed_validation"
 
     possible_fixes: tuple[str, ...] | None = (
         "Try setting 'dependencies=false' in vire.toml if installation of packages isn't needed for building the project.",
@@ -89,9 +78,6 @@ class UnsupportedGitProviderError(VireBaseError):
         'info', 'warn', 'error', 'critical', 'exit'
     ] = "critical"
 
-    internal_log_body: str = "The git provider provided for the job specified is not supported"
-    build_state: str = "failed_validation"
-
     notes: tuple[str, ...] | None = (
         "Check documentation for the details of this error.",
     )
@@ -107,9 +93,6 @@ class RepoFileFetchError(VireBaseError):
     severity: Literal[
         'info', 'warn', 'error', 'critical', 'exit'
     ] = "critical"
-
-    internal_log_body: str = "The provider's raw CDN API failed for specified job uuid"
-    build_state: str = "failed_validation"
 
     notes: tuple[str, ...] | None = (
         "Check documentation for detailed information regarding the error.",

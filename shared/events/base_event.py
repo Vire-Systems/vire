@@ -56,17 +56,8 @@ class VireBaseEvent:
     propagate_state: bool
     timestamp: datetime = field(default_factory= lambda: datetime.now(UTC))
 
+    def get_extra_content(self)-> dict[str, tuple[str, ...] | None]:
+        return {}
 
-# GOAL OF THIS
-# 
-# Get details, construct a detailed json structure like:
-# 
-# {
-#   event: "<event name>",
-#   timestamp: "<datetime obj>"
-#   code: "<code if error, else don't include this field.>",
-#   severity: "<severity of event [info | warn | error | critical | exit]>",
-#   description: "<description of causality of said event>",
-#   job_uuid: "<job uuid>",
-# }
-# 
+    def get_log_extras(self)-> dict[str, str ]:
+        return {}

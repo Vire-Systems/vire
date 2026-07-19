@@ -15,7 +15,7 @@ class VireBaseError(Exception):
     perform logging or persistence themselves; that responsibility belongs to
     the centralized exception handler.
 
-    Attributes
+    Attributes:
     ----------
     error_code:
         Stable identifier used by the logging system and databases.
@@ -26,13 +26,15 @@ class VireBaseError(Exception):
     severity:
         Logging severity associated with the exception.
 
-    internal_log_body:
-        Detailed diagnostic information intended for internal logs.
-        This field should never be exposed directly to users.
+    Optional Attributes:
+    ---------
+    These are sent to the User Report.
 
-    build_state:
-        Optional build state to transition to in the DBs when this exception is handled.
-
+    possible_causes
+    possible_fixes
+    notes - suggestions to the user
+        
+        
     """
 
     error_title: str
@@ -45,9 +47,6 @@ class VireBaseError(Exception):
         "critical",
         "exit",
     ]
-
-    internal_log_body: str
-    build_state: str
 
     # Optionals
     possible_causes: tuple[str, ...] | None = None

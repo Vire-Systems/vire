@@ -28,3 +28,10 @@ class ErrorEvent(VireBaseEvent):
         self.diag_code = self.error.error_code
         self.summary = self.error.error_title
         self.severity = self.error.severity
+
+    def get_extra_content(self) -> dict[str, tuple[str, ...] | None]:
+        return {
+            "possible_causes": self.error.possible_causes,
+            "possible_fixes": self.error.possible_fixes,
+            "notes": self.error.notes
+        }
