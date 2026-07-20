@@ -7,7 +7,7 @@ from typing import Literal
 from BuildScheduler.Scheduler.db.sqlite_orm.db import async_session
 from BuildScheduler.Scheduler.db.sqlite_orm.models import BuildData, BuildState
 from Vire.models.pydantic_classes import BuildRequestModel
-from Vire.objects.dataclass_objects.validation_models import ParsedTOMLObject
+from Vire.objects.validation_models import ParsedTOMLObject
 
 async def register_build_data(BRM: BuildRequestModel, PTO: ParsedTOMLObject)-> None:
     """

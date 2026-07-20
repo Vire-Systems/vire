@@ -25,7 +25,6 @@ from shared.errors.container_runtime_errors import (
     OutputDirNotFound,
 )
 from shared.container_runtimes.runtime_dc import RuntimeMetadata
-from shared.logging.scheduler_logger import vire_logger
 
 
 class DockerRuntime(ContainerRuntime):
@@ -36,6 +35,7 @@ class DockerRuntime(ContainerRuntime):
     def get_client(self) -> DockerClient:
         """Return the docker client."""
         return self.client
+
 
     # Container creation ---
     def create(self, job_uuid: str, image: str, cmd: list[str], metadata: RuntimeMetadata) -> None:
@@ -52,7 +52,6 @@ class DockerRuntime(ContainerRuntime):
         try:
             client = self.get_client()
             if metadata.expires_at is None:
-                vire_logger("critical", "metadata.expires_at has a value of 'None'.")
                 raise ValueError("expires_at is required for container creation.")
 
             labels = {"managed_by": metadata.managed_by, "expires_at": str(metadata.expires_at)}
@@ -66,12 +65,14 @@ class DockerRuntime(ContainerRuntime):
                 detach=True,
                 labels=labels,
             )
+
+        except ValueError:
+            raise
         except APIError as e:
-            vire_logger("critical", "Docker raised APIError. Details: %s", str(e))
-            raise ContainerCreationFail("Container creation failed. Internal Error.") from e
+            raise ContainerCreationFail(error_title="Container creation failed. Docker raised APIError.") from e
         except Exception as e:
-            vire_logger("critical", "[sync_docker_run] Job '%s' was unsuccessful. Details: %s", job_uuid, e)
-            raise ContainerCreationFail(f"Container spin up unsuccessful. Details: {e}") from e
+            raise ContainerCreationFail(error_title=f"Container spin up unsuccessful. Details: {e}") from e
+
 
     # Remove container ----
     def remove(self, job_uuid: str) -> None:
@@ -85,27 +86,20 @@ class DockerRuntime(ContainerRuntime):
         except NotFound:
             raise ContainerNotFound
 
+        except ContainerNotFound:
+            raise
         except APIError as e:
             if e.status_code == 409:
-                vire_logger("info", "[remove_container] Conflict: GC's termination in progress")
                 return
-            vire_logger("critical", "[adapter, docker - remove]-> APIError. Details: %s", str(e))
-            raise ContainerAdapterAPIError from e
+            raise ContainerAdapterAPIError(error_title="Docker API Error.") from e
 
         except Exception as e:
-            vire_logger(
-                "critical",
-                "[adapter, docker - remove]->  Removal of container '%s' was unsuccessful. Details: %s",
-                job_uuid,
-                e,
-            )
-            raise ContainerAdapterAPIError from e
+            raise ContainerAdapterAPIError(error_title="Unexpected error occured while removing the container") from e
+
 
     # Extract artifacts ----
     def stream_file(self, job_uuid: str, output_path: str, path_to_archive: str) -> None:
-        """
-        Stream the file content inside the docker container as an archive (tar file).
-        """
+        """Stream the file content inside the docker container as an archive (tar file)."""
 
         try:
             client = self.get_client()
@@ -116,10 +110,14 @@ class DockerRuntime(ContainerRuntime):
                     tar_file.write(chunk)
 
         except NotFound as e:
-            raise OutputDirNotFound("The output directory given in vire.toml does not exist in the container.") from e
+            raise OutputDirNotFound(
+                error_title="The output directory given in vire.toml does not exist in the container."
+            ) from e
+
 
     # Fetch log lines from container ----
     def get_container_log(self, job_uuid) -> Generator[bytes, None, None]:
+        """Yield a line of stdout from the container."""
         try:
             client = self.get_client()
             container_obj = client.containers.get(job_uuid)
@@ -128,14 +126,27 @@ class DockerRuntime(ContainerRuntime):
                 yield line
 
         except Exception as e:
-            vire_logger("critical", "[adapter, docker - get_container_log]-> Exception.")
-            raise ContainerAdapterAPIError from e
+            raise ContainerAdapterAPIError(
+                error_title="Unable to fetch container logs from container. Unexpected error."
+            ) from e
+
 
     async def list_managed_containers(
         self, metadata: RuntimeMetadata, count: bool, all: bool = False
     ) -> int | AsyncGenerator[str, None]:
         """
+        If count is False,
         Yields container names (aka job_uuid) of containers managed by vire from docker.
+
+        If count is true,
+        Returns the number of containers.
+
+        #  NOTE:
+            Do NOT expose Exception messages to users. It is STRICTLY INTERNAL.
+
+        Raises:
+        -------
+        ContainerAPIError
         """
         try:
             client = self.get_client()
@@ -159,14 +170,20 @@ class DockerRuntime(ContainerRuntime):
 
             return return_async_generator()
         except Exception as e:
-            vire_logger(
-                "critical",
-                "[docker adapter, list_managed_containers] unable to get containers which are overdue. Details: %s",
-                e,
-            )
-            raise ContainerAdapterAPIError from e
+            raise ContainerAdapterAPIError(error_title="unable to get Scheduler managed containers.") from e
+
 
     async def list_expired_containers(self, metadata: RuntimeMetadata) -> AsyncGenerator[str, None]:
+        """
+        Yield the job_uuids (aka names) of expired containers.
+
+        # NOTE:
+            Do NOT expose Exception messages to users. It is STRICTLY INTERNAL.
+
+        Raises:
+        -------
+        ContainerAdapterAPIError
+        """
         try:
             now_time: int = int(time.time())
             client = self.get_client()
@@ -187,7 +204,4 @@ class DockerRuntime(ContainerRuntime):
                     yield container_obj.name
 
         except Exception as e:
-            vire_logger(
-                "critical", "[GC get_containers_overdue] unable to get containers which are overdue. Details: %s", e
-            )
-            raise ContainerAdapterAPIError from e
+            raise ContainerAdapterAPIError(error_title="unable to get containers which are overdue.") from e

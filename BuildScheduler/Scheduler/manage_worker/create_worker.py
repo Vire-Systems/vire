@@ -7,15 +7,14 @@ Functions -
 
 import json
 import subprocess
-from textwrap import dedent
 
-from BuildScheduler.Scheduler.dataclass_models.scheduler_dc import WorkerCreationParams
 from BuildScheduler.Scheduler.db.sqlite_orm.crud import update
-from BuildScheduler.Scheduler.errors.db_errors import NoJobStateError
 from BuildScheduler.Scheduler.manage_worker.del_container import delayed_delete
+from BuildScheduler.Scheduler.utils.scheduler_dc import WorkerCreationParams
 from BuildScheduler.Scheduler.utils.state import scheduler_config
-from shared.logging.pub_redis import publish_log_redis
-from shared.logging.scheduler_logger import vire_logger
+from shared.errors.scheduler_errors import NoJobStateError
+from shared.event_handling.handler import dispatch_event
+from shared.events.events import LogEvent
 
 
 async def create_worker_process(WCP: WorkerCreationParams) -> None:
@@ -50,64 +49,45 @@ async def create_worker_process(WCP: WorkerCreationParams) -> None:
                 "--json_struct",
                 argument,
             ]
-        except Exception as e:
-            vire_logger(
-                "critical",
-                "[_wk_helper] Worker creation failed for job_uuid: %s, user_uuid: %s. Details: %s",
-                WCP.job_uuid,
-                WCP.user_uuid,
-                e,
-            )
-
-            line = f"""
-            Error: VC-SC-001 & VC-SC-004. Failed to run job.
-            Details:
-              Job UUID: {WCP.job_uuid}
-              User UUID: {WCP.user_uuid}
-              Commit SHA: {WCP.commit_id}
-
-            NOTE: This is an internal error. Contact us if you see this.
-            """
-            await publish_log_redis(dedent(line), user_uuid=WCP.user_uuid, job_uuid=WCP.job_uuid)
-            await update.update_job_status(job_uuid=WCP.job_uuid, status_msg="crashed", error_code="VC-SC-001")
-            return
+        except Exception:
+            raise
 
         try:
             process = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             await update.update_job_status(job_uuid=WCP.job_uuid, status_msg="running", PID=process.pid)
             await delayed_delete(job_uuid=WCP.job_uuid, user_uuid=WCP.user_uuid)
 
-        except NoJobStateError:
-            vire_logger(
-                "critical",
-                "[create_worker] raised NoJobStateError. Worker creation failed for job_uuid '%s' owned by user uuid '%s'.",
-                WCP.job_uuid,
-                WCP.user_uuid,
+        except NoJobStateError as e:
+            await dispatch_event(
+                event=LogEvent(
+                    user_uuid=WCP.user_uuid,
+                    job_uuid=WCP.job_uuid,
+                    diag_code=e.error_code,
+                    summary="Failed to create a sandbox for the job.",
+                    severity=e.severity,
+                    source="Scheduler",
+                    exception_name=type(e).__name__,
+                    internal_log=e.error_title,
+                )
             )
-            await update.update_job_status(job_uuid=WCP.job_uuid, status_msg="crashed", error_code="VC-SC-003")
-
-            line = f"""
-            Error: VC-SC-003. Failed to run job.
-            Details:
-              Job UUID: {WCP.job_uuid}
-              User UUID: {WCP.user_uuid}
-              Commit SHA: {WCP.commit_id}
-            """
-            await publish_log_redis(dedent(line), user_uuid=WCP.user_uuid, job_uuid=WCP.job_uuid)
+            await update.update_job_status(job_uuid=WCP.job_uuid, status_msg="crashed", error_code=e.error_code)
 
         except Exception as e:
-            vire_logger("critical", "[create_worker] Worker creation failed. Details: %s", e)
-            await update.update_job_status(job_uuid=WCP.job_uuid, status_msg="crashed", error_code="VC-SH-001")
-
-            line = f"""
-            Error: VC-SC-001. Failed to run job.
-            Details:
-              Job UUID: {WCP.job_uuid}
-              User UUID: {WCP.user_uuid}
-              Commit SHA: {WCP.commit_id}
-
-            NOTE: This is an internal error. Contact us if you see this.
-            """
-            await publish_log_redis(dedent(line), user_uuid=WCP.user_uuid, job_uuid=WCP.job_uuid)
+            await dispatch_event(
+                event=LogEvent(
+                    user_uuid=WCP.user_uuid,
+                    job_uuid=WCP.job_uuid,
+                    diag_code="VC-IN-UNEXPECTED_INTERNAL_ERROR",
+                    severity="critical",
+                    summary="Worker creation failed dueto an internal error.",
+                    source="scheduler",
+                    exception_name=type(e).__name__,
+                    internal_log="Worker creation failed for the container creation of the job.",
+                )
+            )
+            await update.update_job_status(
+                job_uuid=WCP.job_uuid, status_msg="crashed", error_code="VC-IN-UNEXPECTED_INTERNAL_ERROR"
+            )
+            return
 
     await _wk_helper(WCP)

@@ -14,6 +14,9 @@ class ContainerRuntime:
         Run a container synchronously.
         Intended to be used by the worker package.
 
+        # NOTE:
+            Do NOT expose Exception messages to users. It is STRICTLY INTERNAL.
+
         Args
         ----
         job_uuid - Job UUID of the container job. Also used as container name.
@@ -32,6 +35,9 @@ class ContainerRuntime:
     def remove(self, job_uuid: str) -> None:
         """
         Remove a container using it's name (job_uuid).
+
+        # NOTE:
+            Do NOT expose Exception messages to users. It is STRICTLY INTERNAL.
 
         Args
         ----
@@ -67,6 +73,9 @@ class ContainerRuntime:
         """
         Stream logs from the container.
 
+        # NOTE:
+            Do NOT expose Exception messages to users. It is STRICTLY INTERNAL.
+
         Args
         ----
         job_uuid: Name of the container
@@ -83,6 +92,9 @@ class ContainerRuntime:
     ) -> int | AsyncGenerator[str, None]:
         """
         Yields the names (aka job_uuid) of containers managed by Vire.
+
+        # NOTE:
+            Do NOT expose Exception messages to users. It is STRICTLY INTERNAL.
 
         Returns:
         --------
@@ -103,6 +115,9 @@ class ContainerRuntime:
         Yields the name (aka job_uuid) of containers that have expired.
         Intended to be used by the GC or somewhere where expired containers' names are needed.
 
+        # NOTE:
+            Do NOT expose Exception messages to users. It is STRICTLY INTERNAL.
+        
         Raises:
         ------
 

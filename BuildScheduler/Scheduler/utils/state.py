@@ -1,6 +1,6 @@
 import os
 import asyncio
-from BuildScheduler.Scheduler.dataclass_models.scheduler_dc import SchedulerConfig
+from BuildScheduler.Scheduler.utils.scheduler_dc import SchedulerConfig
 
 
 scheduler_config = SchedulerConfig(

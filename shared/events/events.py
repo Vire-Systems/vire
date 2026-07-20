@@ -2,7 +2,6 @@
 All the Vire specific events.
 """
 
-from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass
 
 from shared.utils.types import Severity
@@ -10,12 +9,44 @@ from shared.events.base_event import VireBaseEvent
 
 @dataclass(slots=True, kw_only=True)
 class GCReapEvent(VireBaseEvent):
-    event: str = "Container Reaped"
+    event: str = "ContainerReaped"
     severity: Severity = "warn"
-    diag_code: str = "VC-GC-001"
+    diag_code: str = "VC-GC-CONTAINER_REAPED"
 
     write_log: bool = True
     propagate_state: bool = True
+
+
+@dataclass(slots=True, kw_only=True)
+class ContainerTimeoutEvent(VireBaseEvent):
+    event: str = "ContainerTimedOut"
+    severity: Severity = "info"
+    diag_code: str = "VC-SC-CONTAINER_TIMED_OUT"
+
+    write_log: bool = True
+    propagate_state: bool = True
+
+
+@dataclass(slots=True, kw_only=True)
+class InfoEvent(VireBaseEvent):
+    """
+    This event is for 
+    """
+    event: str = "InfoEvent"
+    severity: Severity = "info"
+
+    write_log: bool = True
+    propagate_state: bool = True
+
+    extra_details: dict[str, tuple[str, ...] | None] | None = None
+    extra_log_details: dict[str, str] | None = None
+
+    def get_extra_content(self) -> dict[str, tuple[str, ...] | None]:
+        return self.extra_details if self.extra_details else {}
+
+    def get_log_extras(self) -> dict[str, str]:
+        return self.extra_log_details if self.extra_log_details else {}
+
 
 @dataclass(slots=True, kw_only=True)
 class LogEvent(VireBaseEvent):

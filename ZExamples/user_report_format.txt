@@ -1,0 +1,18 @@
+Format :
+
+Error Code: <...>
+
+Summary: 
+    <...>
+
+Job Details:
+    - <...>
+
+Possible Causes:
+    - <...>
+
+Possible Fixes:
+    - <...>
+
+Note:
+    - <...>

@@ -1,6 +1,7 @@
 from dataclasses import dataclass
-from typing import Literal
+
 from shared.errors.base_error import VireBaseError
+from shared.utils.types import Severity
 
 # Note: The comments on top of each class is for separating the classes at a glance
 
@@ -13,9 +14,7 @@ class InvalidBranchError(VireBaseError):
 
     error_title: str = "Unable to fetch vire.toml. The provided branch was invalid."
     error_code: str = "VC-VD-002"
-    severity: Literal[
-        'info', 'warn', 'error', 'critical', 'exit'
-    ] = "warn"
+    severity: Severity = "warn"
 
     possible_causes: tuple[str, ...] | None = (
         "Branch was deleted right after triggering the Vire webhook.",
@@ -30,9 +29,7 @@ class UnsupportedPMError(VireBaseError):
     error_code: str = "VC-VD-015"
     error_title: str = "Unsupported package manager. The PM provided is unsupported."
 
-    severity: Literal[
-        'info', 'warn', 'error', 'critical', 'exit'
-    ] = "warn"
+    severity: Severity = "warn"
 
 
 # Empty lockfile --
@@ -43,9 +40,7 @@ class EmptyLockfileError(VireBaseError):
     error_code: str = "VC-VD-012"
     error_title: str = "Empty lockfile in the provided branch."
 
-    severity: Literal[
-        'info', 'warn', 'error', 'critical', 'exit'
-    ] = "warn"
+    severity: Severity = "warn"
 
 
 # No lockfile --
@@ -56,9 +51,7 @@ class NoLockfileError(VireBaseError):
     error_code: str = "VC-VD-013"
     error_title: str = "No lockfile found in the branch. Details below"
 
-    severity: Literal[
-        'info', 'warn', 'error', 'critical', 'exit'
-    ] = "warn"
+    severity: Severity = "warn"
 
 
     possible_fixes: tuple[str, ...] | None = (
@@ -74,9 +67,7 @@ class UnsupportedGitProviderError(VireBaseError):
     error_code: str = "VC-VD-005"
     error_title: str = "The git provider specified is not supported."
 
-    severity: Literal[
-        'info', 'warn', 'error', 'critical', 'exit'
-    ] = "critical"
+    severity: Severity = "critical"
 
     notes: tuple[str, ...] | None = (
         "Check documentation for the details of this error.",
@@ -90,9 +81,7 @@ class RepoFileFetchError(VireBaseError):
     error_code: str = "VC-VD-014"
     error_title: str = "Error: VC-VD-014. Git provider API failed."
 
-    severity: Literal[
-        'info', 'warn', 'error', 'critical', 'exit'
-    ] = "critical"
+    severity: Severity = "critical"
 
     notes: tuple[str, ...] | None = (
         "Check documentation for detailed information regarding the error.",

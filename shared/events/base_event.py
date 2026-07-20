@@ -59,5 +59,5 @@ class VireBaseEvent:
     def get_extra_content(self)-> dict[str, tuple[str, ...] | None]:
         return {}
 
-    def get_log_extras(self)-> dict[str, str ]:
+    def get_log_extras(self)-> dict[str, str]:
         return {}
