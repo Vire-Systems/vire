@@ -7,8 +7,8 @@ Functions-
 
 import tomllib
 from Vire.project_manifest.schema_check import check_toml_schema
-from Vire.project_manifest.errors.config_errors import InvalidVireToml
-from Vire.objects.dataclass_objects.validation_models import ParsedTOMLObject
+from shared.errors.validation_errors import InvalidVireTomlError
+from Vire.objects.validation_models import ParsedTOMLObject
 
 async def parse_toml(toml_string: str)-> ParsedTOMLObject:
     """
@@ -21,13 +21,13 @@ async def parse_toml(toml_string: str)-> ParsedTOMLObject:
         ParsedTOMLObject
 
     Raises:
-        'InvalidVireToml' if 'check_toml_schema' raises InvalidVireToml
+        'InvalidVireTomlError' if 'check_toml_schema' raises InvalidVireTomlError
     
     Catches:
-        InvalidVireToml and reraises it.
+        InvalidVireTomlError and reraises it.
     """
     try:
         toml_dict = tomllib.loads(toml_string)
         return await check_toml_schema(toml_dict)
-    except InvalidVireToml as e:
+    except InvalidVireTomlError as e:
         raise e

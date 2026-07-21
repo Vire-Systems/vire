@@ -7,6 +7,7 @@ Functions -
 
 from Vire.objects.git_provider_adapter import PROVIDER_REGISTRY
 from Vire.utils.async_requests import send_request
+from shared.errors.validation_errors import GitProviderAPIError
 from shared.shared_state import shared_config, lockfile_matrix
 from shared.errors import vire_errors as errors 
 
@@ -22,7 +23,7 @@ async def fetch_lockfile_name(username: str, reponame: str, provider: str, commi
 
     Raises -
         1. EmptyLockfile
-        2. Keyerror (rare but possible if git_tree_node["path"] or git_tree_req.json()["trees"] does not exist.)
+        2. GitProviderAPIError (rare but possible if git_tree_node["path"] or git_tree_req.json()["trees"] does not exist.)
         3. NoLockfileError
     """
     try:
@@ -42,7 +43,7 @@ async def fetch_lockfile_name(username: str, reponame: str, provider: str, commi
                 continue
     
             if node["size"] == 0:
-                raise errors.EmptyLockfile(error_title=path)
+                raise errors.EmptyLockfileError(error_title= f"The lockfile ({path}) is empty.")
     
             if node["type"] != "blob":
                 continue
@@ -51,6 +52,6 @@ async def fetch_lockfile_name(username: str, reponame: str, provider: str, commi
     
         raise errors.NoLockfileError()
     except KeyError as key_error:
-        raise errors.UnsupportedGitProviderError(error_title=f"The framework provided ('{provider}') is not supported.") from key_error
+        raise GitProviderAPIError(error_title=f"{provider.capitalize()}'s Git tree API failed.") from key_error
     except errors.RepoFileFetchError as e:
         raise e

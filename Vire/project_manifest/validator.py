@@ -11,7 +11,7 @@ import json
 import re
 
 from shared.shared_state import lockfile_matrix
-from Vire.project_manifest.errors import config_errors
+from shared.errors import validation_errors
 from Vire.utils.state import available_frameworks
 
 # frameworks vite, astro, vue, react, sveltekit, nextjs, nuxtjs, 11ty
@@ -30,7 +30,7 @@ async def validate_package_json(package_json_str: str) -> bool:
         Returns False if "{"preinstall", "postinstall", "install", "prepare", "prepublish"}" is present in pacakge.json[scripts].
 
     Raises:
-        config_errors.InvalidPackageJson
+        validation_errors.InvalidPackageJsonError
     """
     try:
         package_json = json.loads(package_json_str)
@@ -39,16 +39,18 @@ async def validate_package_json(package_json_str: str) -> bool:
         found_keys = [key for key in blocked_keys if key in scripts]
 
         if found_keys:
-            raise config_errors.InvalidPackageJson(
-                f"The following keys cannot be present in package.json. The invalid keys: {list(key for key in found_keys)}"
+            raise validation_errors.InvalidPackageJsonError(
+                error_title="The following keys cannot be present in package.json. The invalid keys: {list(key for key in found_keys)}"
             )
         return True
 
-    except config_errors.InvalidPackageJson:
+    except validation_errors.InvalidPackageJsonError:
         raise
     except Exception as e:
-        raise config_errors.InvalidPackageJson(
-            f"Encountered unexpected errors while attempting to parse package.json. Details: {type(e).__name__}"
+        raise validation_errors.InvalidPackageJsonError(
+            error_title= "Encountered unexpected errors while attempting to parse package.json. Internal Error",
+            error_code="VC-IN-UNEXPECTED_INTERNAL_ERROR",
+            severity="critical"
         ) from e
 
 
@@ -63,25 +65,25 @@ async def validate_toml(lockfile_name: str | None, package_manager: str, output_
         1. if the given package_manager (arg) is invalid (unsupported).
         2. if lockfile given does not match the lockfile of the provided package manager.
 
-    'InvalidOutDir' -
+    'InvalidOutDirError' -
         1. If output_dir provided fails regex check (r[a-zA-Z0-9_]+).
 
     'UnsupportedFrameworkError'
         1. If framework is not in FRAMEWORK_REGISTRY's keys.
     """
     if framework.lower() not in available_frameworks:
-        raise config_errors.UnsupportedFrameworkError(
-            f"The framework provided ({framework}) is either unsupported or invalid."
+        raise validation_errors.UnsupportedFrameworkError(
+            error_title="The framework provided ({framework}) is either unsupported or invalid."
         )
 
     if lockfile_name:
         if lockfile_matrix.get(lockfile_name) != package_manager:
-            raise config_errors.PackageManagerException(
-                f"The lockfile ('{lockfile_name}') fetched by Vire does not match the Lockfile associated with the package manager ('{package_manager}') provided in your vire.toml."
+            raise validation_errors.PackageManagerException(
+                error_title=f"The lockfile ('{lockfile_name}') fetched by Vire does not match the Lockfile associated with the package manager ('{package_manager}') provided in your vire.toml."
             )
 
-    allowed = re.fullmatch(r"[a-zA-Z0-9_]+$", output_dir)
+    allowed = re.fullmatch(r"[a-zA-Z0-9_-]+", output_dir)
     if not allowed:
-        raise config_errors.InvalidOutDir(
-            f"The output directory ({output_dir}) is not allowed. Only alphanumeric and underscore characters are allowed."
+        raise validation_errors.InvalidOutDirError(
+            error_title=f"The output directory ({output_dir}) is not allowed. Only alphanumeric, hyphens and underscore characters are allowed."
         )

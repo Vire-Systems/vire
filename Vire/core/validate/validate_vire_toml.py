@@ -5,13 +5,11 @@ Functions -
     1. validate_vire_toml
 """
 
-from textwrap import dedent
-
-from shared.shared_state import lockfile_matrix
-from Vire.objects.dataclass_objects.validation_models import ParsedTOMLObject, TOMLValidationParams, ValidatorContext
-from Vire.project_manifest.errors import config_errors
+from shared.event_handling.handler import dispatch_event
+from shared.events.error_event import ErrorEvent
+from Vire.objects.validation_models import ParsedTOMLObject, TOMLValidationParams, ValidatorContext
+from shared.errors import validation_errors
 from Vire.project_manifest.validator import validate_toml
-from Vire.utils.publish_job_log import publish_job_log
 
 
 async def validate_vire_toml(TVP: TOMLValidationParams, VC: ValidatorContext, PTO: ParsedTOMLObject) -> bool | None:
@@ -35,70 +33,19 @@ async def validate_vire_toml(TVP: TOMLValidationParams, VC: ValidatorContext, PT
         return True
 
     # Error handling
-    except config_errors.UnsupportedFrameworkError as e:
-        await publish_job_log(
-            dedent(
-                f"""
-            Error: VC-VD-021. Unable to validate vire.toml.
-            Timestamp: {TVP.ts}
-
-            Details:
-                Job UUID: {VC.job_uuid}
-                vire.toml: {TVP.common_line}
-                Issue: {str(e)}
-
-            Suggested fixes:
-                1. Upload file in HTML.
-                2. Try other supported frameworks available in docs.
-            """
-            ),
-            error_code="VC-VD-021",
-        )
-
-    except config_errors.PackageManagerException as e:
-        expected_pm = lockfile_matrix[TVP.lockfile_name] if TVP.lockfile_name else "Unsupported PM"
-        await publish_job_log(
-            dedent(
-                f"""
-            Error: VC-VD-022. PM and lockfile do not match.
-            Timestamp: {TVP.ts}
-
-            Job Details:
-                Job UUID: {VC.job_uuid}
-                Commit SHA: {VC.commit_id}
-                Branch Name: {VC.branch}
-                Fetched from: {TVP.common_line}
-
-            Errors caused by:
-                Lockfile: {TVP.lockfile_name} (from {VC.remote_reponame} repository.)
-                Expected PM: {expected_pm} (Based on lockfile.)
-                Provided PM: {PTO.package_manager} (from vire.toml)
-                Issue: {str(e)}
-
-            Suggested fixes:
-                1. Run npm install and commit the lockfile and delete the old one.
-            """
-            ),
-            "VC-VD-022",
-        )
-
-    except config_errors.InvalidOutDir as e:
-        await publish_job_log(
-            dedent(
-                f"""
-            Error: VC-VD-023. Invalid symbols for output directory.
-            Timestamp: {TVP.ts}
-
-            Job Details:
-                Job UUID: {VC.job_uuid}
-                Commit SHA: {VC.commit_id}
-                Branch Name: {VC.branch}
-                Fetched from: {TVP.common_line}
-
-            Errors caused by:
-                Output Dir: {PTO.output_dir}
-                Issues: {str(e)}
-            """
-            ),
-            "VC-VD-023",
+    except (
+        validation_errors.UnsupportedFrameworkError,
+        validation_errors.InvalidOutDirError,
+        validation_errors.PackageManagerException
+    ) as e:
+        await dispatch_event(
+            event=ErrorEvent(job_uuid=VC.job_uuid, user_uuid=VC.user_uuid, error=e),
+            job_details= {
+                "Job UUID": VC.job_uuid,
+                "Commit SHA": VC.commit_id,
+                "Branch Name": VC.branch,
+                "Package Manager": PTO.package_manager,
+                "Fetched from": TVP.common_line,
+                "Output Directory": PTO.output_dir
+            }
         )

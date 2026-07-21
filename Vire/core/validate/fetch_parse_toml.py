@@ -6,21 +6,21 @@ Functions -
     1. fetch_and_parse_toml
 """
 
-from textwrap import dedent
 from tomllib import TOMLDecodeError
 
+from shared.errors import validation_errors
+from shared.errors import vire_errors as errors
+from shared.event_handling.handler import dispatch_event
+from shared.events.error_event import ErrorEvent
 from Vire.core.core_utils.fetch_buildreq import fetch_vire_toml
+from Vire.objects.validation_models import ParsedTOMLObject, ValidatorContext
 from Vire.project_manifest.parse_toml import parse_toml
-from Vire.project_manifest.errors import config_errors
-from shared.errors import vire_errors as errors 
-from Vire.utils.publish_job_log import publish_job_log
 
-from Vire.objects.dataclass_objects.validation_models import ValidatorContext, ParsedTOMLObject
 
-async def fetch_and_parse_toml(VC: ValidatorContext, ts: str)-> ParsedTOMLObject | None:
+async def fetch_and_parse_toml(VC: ValidatorContext, ts: str) -> ParsedTOMLObject | None:
     """
     This function fetches and parses vire.toml.
-    
+
     Args -
         TO - ValidatorContext, Toml object with toml data.
 
@@ -32,78 +32,28 @@ async def fetch_and_parse_toml(VC: ValidatorContext, ts: str)-> ParsedTOMLObject
         vire_toml_str = await fetch_vire_toml(
             provider=VC.provider, remote_user=VC.remote_user, remote_reponame=VC.remote_reponame, branch=VC.branch
         )
-        verified_toml: ParsedTOMLObject = await parse_toml(vire_toml_str)
+
+        try:
+            verified_toml: ParsedTOMLObject = await parse_toml(vire_toml_str)
+        except TOMLDecodeError as e:
+            raise validation_errors.InvalidTomlSyntaxError from e
 
         return verified_toml
 
-    except TOMLDecodeError as e:
-        await publish_job_log(dedent(
-            f"""
-            Error: VC-VD-003. Unable to validate vire.toml.
-
-            Details:
-                Job UUID: {VC.job_uuid}
-                Commit SHA: {VC.commit_id}
-                Branch Name: {VC.branch}
-                Fetched from: Root Directory of {VC.branch}, {VC.remote_reponame}
-                Issue: {str(e)}
-
-            Suggested fixes:
-                1. Use official docs' vire.toml as reference.
-            """), "VC-VD-003")
-
-    except errors.InvalidBranchError:
-        await publish_job_log(dedent(
-            f"""
-            Error: VC-VD-002. Unable to fetch vire.toml.
-
-            Details:
-                Job UUID: {VC.job_uuid}
-                Commit SHA: {VC.commit_id}
-                Branch Name: {VC.branch}
-                Fetched from: Root Directory of {VC.branch}, {VC.remote_reponame}
-
-            Possible reasons it can happen:
-                1. Branch '{VC.branch}' was deleted right after triggering the Vire webhook.
-            """), "VC-VD-002")
-    
-    except config_errors.InvalidVireToml as e:
-        await publish_job_log(dedent(
-            f"""
-            Error: VC-VD-003. Unable to validate vire.toml.
-
-            Details:
-                Job UUID: {VC.job_uuid}
-                Commit SHA: {VC.commit_id}
-                Branch Name: {VC.branch}
-                Fetched from: Root Directory of {VC.branch}, {VC.remote_reponame}
-                Issue: {str(e)}
-
-            Suggested fixes:
-                1. Use official docs' vire.toml as reference.
-            """), "VC-VD-003")
-    
-    except errors.RepoFileFetchError as e:
-        await publish_job_log(dedent(
-            f"""
-            Error: VC-VD-004. Unable to fetch files from the repository '{VC.remote_reponame}.'
-
-            Details:
-                Job UUID: {VC.job_uuid}
-                Commit SHA: {VC.commit_id}
-                Branch Name: {VC.branch}
-                Issue: {e}
-            """), "VC-VD-004")
-
-    except errors.UnsupportedGitProviderError as e:
-        await publish_job_log(dedent(
-            f"""
-            Error: VC-VD-005. The git provider '{VC.provider}' is not supported.
-
-            Details:
-                Job UUID: {VC.job_uuid}
-                Commit SHA: {VC.commit_id}
-                Branch Name: {VC.branch}
-                Issue: {e}
-            """
-        ), "VC-VD-005")
+    except (
+        validation_errors.InvalidTomlSyntaxError,
+        errors.InvalidBranchError,
+        validation_errors.InvalidVireTomlError,
+        errors.RepoFileFetchError,
+        errors.UnsupportedGitProviderError
+    ) as e:
+        await dispatch_event(
+            event=ErrorEvent(job_uuid=VC.job_uuid, user_uuid=VC.user_uuid, error=e),
+            job_details={
+                "Job UUID": VC.job_uuid,
+                "Commit SHA": VC.commit_id,
+                "Provider": VC.provider.capitalize(),
+                "Branch Name": VC.branch,
+                "Fetched from": f"Root Directory of {VC.branch}, {VC.remote_reponame}",
+            }
+        )

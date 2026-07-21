@@ -6,9 +6,10 @@ Functions -
 1. check_toml_schema
 """
 
-from shared.logging.scheduler_logger import vire_logger
-from Vire.objects.dataclass_objects.validation_models import ParsedTOMLObject
-from Vire.project_manifest.errors.config_errors import InvalidVireToml
+from shared.event_handling.handler import dispatch_event
+from shared.events.events import LogEvent
+from Vire.objects.validation_models import ParsedTOMLObject
+from shared.errors.validation_errors import InvalidVireTomlError
 
 
 async def check_toml_schema(toml_dict: dict) -> ParsedTOMLObject:
@@ -21,7 +22,7 @@ async def check_toml_schema(toml_dict: dict) -> ParsedTOMLObject:
     Returns:
         ParsedTOMLObject
 
-    Raises "BuildScheduler.Scheduler.project_manifest.errors.config_errors.InvalidVireToml" if toml is malformed.
+    Raises "BuildScheduler.Scheduler.project_manifest.errors.config_errors.InvalidVireTomlError" if toml is malformed.
     Raise returns a string with all missing toml_dict keys.
     Catches broad Exceptions.
     """
@@ -29,14 +30,14 @@ async def check_toml_schema(toml_dict: dict) -> ParsedTOMLObject:
         output_str = ""
         details: dict[str, str] | None = toml_dict.get("details")
         if not details:
-            raise InvalidVireToml("[details] table not found.")
+            raise InvalidVireTomlError(error_title="[details] table not found.")
 
         framework = details.get("framework")
         package_manager = details.get("package_manager")
 
         project: dict[str, str] | None = toml_dict.get("project")
         if not project:
-            raise InvalidVireToml("[project] table not found")
+            raise InvalidVireTomlError(error_title="[project] table not found")
 
         output_dir = project.get("output_dir")
         framework_version = project.get("framework_version")
@@ -54,7 +55,7 @@ async def check_toml_schema(toml_dict: dict) -> ParsedTOMLObject:
             output_str += "'dependencies' cannot be empty."
 
         if output_str:
-            raise InvalidVireToml(output_str)
+            raise InvalidVireTomlError(error_title = output_str)
 
         return ParsedTOMLObject(
             framework=framework,
@@ -63,12 +64,19 @@ async def check_toml_schema(toml_dict: dict) -> ParsedTOMLObject:
             output_dir=output_dir,
             install_req=dependencies_req,
         )
-    except InvalidVireToml as e:
+    except InvalidVireTomlError as e:
         raise e
     except Exception as e:
-        await vire_logger(
-            "critical", "[Core check_toml_template] unable to parse toml. Details: %s. toml_dict: %s", e, toml_dict
-        )
-        raise InvalidVireToml(
-            "Unexpected errors occoured during parsing vire.toml. It appears to be misconfigured. See the docs for more information."
+        await dispatch_event(event=LogEvent(
+            diag_code= "VC-IN-UNEXPECTED_INTERNAL_ERROR",
+            severity="critical",
+            summary = "Unable to parse vire.toml of the user (raised Exception)",
+            source = "validation",
+            exception_name= type(e).__name__,
+            internal_log=None
+        ))
+        raise InvalidVireTomlError(
+            error_title="Internal error while parsing vire.toml.",
+            error_code="VC-IN-UNEXPECTED_INTERNAL_ERROR",
+            severity="critical"
         )

@@ -8,7 +8,6 @@ from BuildScheduler.Scheduler.manage_worker.create_worker import create_worker_p
 from shared.errors.scheduler_errors import NoJobStateError
 from shared.event_handling.handler import dispatch_event
 from shared.events.events import LogEvent
-from shared.logging.scheduler_logger import vire_logger
 
 
 async def scheduler_create_worker(job_uuid: str) -> None:
@@ -16,7 +15,15 @@ async def scheduler_create_worker(job_uuid: str) -> None:
         job_data = await read.fetch_build_data(job_uuid)
         if not job_data:
             raise NoJobStateError()
-        vire_logger("info", f"Worker started. Job UUID: {job_uuid}")
+        await dispatch_event(event=LogEvent(
+            job_uuid=job_uuid,
+            diag_code = "VC-I-WORKER_STARTED",
+            severity="info",
+            summary="A worker process started.",
+            source = "scheduler",
+            exception_name=None,
+            internal_log=None,
+        ))
         await create_worker_process(job_data)
 
     except NoJobStateError as e:

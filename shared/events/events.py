@@ -68,7 +68,7 @@ class LogEvent(VireBaseEvent):
     event: str = "Log Event"
     
     source: str
-    exception_name: str
+    exception_name: str | None
     internal_log: str | None
 
     write_log:bool = True
@@ -77,8 +77,8 @@ class LogEvent(VireBaseEvent):
 
     def get_log_extras(self) -> dict[str, str]:
         log_extras = {
-            "exception_name": self.exception_name,
-            "source":self.source,
+            "exception_name": str(self.exception_name),
+            "source": self.source,
         }
         log_extras.update({"reason":self.internal_log} if self.internal_log else {})
         return log_extras

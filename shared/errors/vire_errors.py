@@ -13,11 +13,15 @@ class InvalidBranchError(VireBaseError):
     """
 
     error_title: str = "Unable to fetch vire.toml. The provided branch was invalid."
-    error_code: str = "VC-VD-002"
+    error_code: str = "VC-VD-INVALID_BRANCH"
     severity: Severity = "warn"
 
     possible_causes: tuple[str, ...] | None = (
         "Branch was deleted right after triggering the Vire webhook.",
+    )
+
+    notes: tuple[str, ...] | None = (
+        "If branch exists and you see this error, create an issue on GitHub regarding this. (Internal parsing error)",
     )
 
 
@@ -26,7 +30,7 @@ class InvalidBranchError(VireBaseError):
 class UnsupportedPMError(VireBaseError):
     """Raise for unsupported package managers"""
 
-    error_code: str = "VC-VD-015"
+    error_code: str = "VC-VD-UNSUPPORTED_PM"
     error_title: str = "Unsupported package manager. The PM provided is unsupported."
 
     severity: Severity = "warn"
@@ -37,7 +41,7 @@ class UnsupportedPMError(VireBaseError):
 class EmptyLockfileError(VireBaseError):
     """Raise when lockfile is empty."""
 
-    error_code: str = "VC-VD-012"
+    error_code: str = "VC-VD-EMPTY_LOCKFILE"
     error_title: str = "Empty lockfile in the provided branch."
 
     severity: Severity = "warn"
@@ -48,7 +52,7 @@ class EmptyLockfileError(VireBaseError):
 class NoLockfileError(VireBaseError):
     """Raise when unable to find a lockfile."""
 
-    error_code: str = "VC-VD-013"
+    error_code: str = "VC-VD-NO_LOCKFILE"
     error_title: str = "No lockfile found in the branch. Details below"
 
     severity: Severity = "warn"
@@ -64,7 +68,7 @@ class NoLockfileError(VireBaseError):
 @dataclass(slots=True, kw_only=True)
 class UnsupportedGitProviderError(VireBaseError):
     """Raise when the git provider isn't supported."""
-    error_code: str = "VC-VD-005"
+    error_code: str = "VC-VD-UNSUPPORTED_GIT_PROVIDER"
     error_title: str = "The git provider specified is not supported."
 
     severity: Severity = "critical"
@@ -78,10 +82,16 @@ class UnsupportedGitProviderError(VireBaseError):
 @dataclass(slots=True, kw_only=True)
 class RepoFileFetchError(VireBaseError):
     """Raise when raw file fetch from client provided URL fails."""
-    error_code: str = "VC-VD-014"
+    error_code: str = "VC-VD-FILE_FETCH_FAILED"
     error_title: str = "Error: VC-VD-014. Git provider API failed."
 
     severity: Severity = "critical"
+
+    possible_causes: tuple[str, ...] | None = (
+    "Check {VC.provider.capitalize()}'s status",
+    "Could be caused by the package.json file being malformed.",
+    "Outdated Commit SHA because something was pushed right after the build started (1-3s delay between pushes.)",
+    )
 
     notes: tuple[str, ...] | None = (
         "Check documentation for detailed information regarding the error.",
