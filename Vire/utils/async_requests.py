@@ -7,7 +7,7 @@ Functions -
 
 import asyncio
 import httpx
-from Vire.errors import errors
+from shared.errors import vire_errors as errors 
 
 MAX_CONCURRENT = 50
 TIMEOUT = 5
@@ -33,9 +33,9 @@ async def _send_request_helper(client: httpx.AsyncClient, url: str)-> httpx.Resp
             return response
         except httpx.HTTPStatusError as e:
             status_code = e.response.status_code
-            raise errors.RepoFileFetchError(f"Fetching file (raw url: {url}) failed. Provider's API returned status code : '{status_code}'.") 
+            raise errors.RepoFileFetchError(error_title=f"Fetching file (raw url: {url}) failed. Provider's API returned status code : '{status_code}'.") 
         except Exception:
-            raise errors.RepoFileFetchError(f"Fetching file (raw url: {url}) failed. Vire faced unexpected errors while fetching (Internal Error).")
+            raise errors.RepoFileFetchError(error_title=f"Fetching file (raw url: {url}) failed. Vire faced unexpected errors while fetching (Internal Error).")
 
 async def send_request(url: str)-> httpx.Response:
     global client

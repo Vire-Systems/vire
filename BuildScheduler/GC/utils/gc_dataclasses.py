@@ -6,3 +6,4 @@ class GCConfig:
     REDIS_URL: str
     DB_PATH: str
     LOG_LEVEL: int
+    CONTAINER_REMOVAL_DELAY: int

@@ -8,12 +8,13 @@ Functions -
     1. init (async)
 """
 
-from sqlalchemy import TIMESTAMP, Boolean, Integer, String, func
-from sqlalchemy.orm import Mapped, mapped_column
 from datetime import datetime
 
+from sqlalchemy import TIMESTAMP, Boolean, Integer, String, func
+from sqlalchemy.orm import Mapped, mapped_column
+
 from BuildScheduler.Scheduler.db.sqlite_orm.db import Base, engine
-from BuildScheduler.shared.logging.scheduler_logger import vire_logger
+from shared.logging.scheduler_logger import vire_logger
 
 
 class BuildData(Base):
@@ -30,6 +31,7 @@ class BuildData(Base):
         remote_reponame: str,
         branch: str
     """
+
     __tablename__ = "BuildData"
     job_uuid: Mapped[str] = mapped_column(String, nullable=False, primary_key=True)
     user_uuid: Mapped[str] = mapped_column(String, nullable=False)
@@ -49,6 +51,7 @@ class BuildState(Base):
     This SQLAlchemy schema handles build states.
     Only running / queued builds should be present here.
     """
+
     __tablename__ = "BuildState"
     job_uuid: Mapped[str] = mapped_column(String, nullable=False, primary_key=True)
     user_uuid: Mapped[str] = mapped_column(String, nullable=False)

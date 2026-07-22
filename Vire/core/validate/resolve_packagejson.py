@@ -5,21 +5,16 @@ Functions -
     1. fetch_and_validate_pkgjson
 """
 
-from textwrap import dedent
-
-from Vire.utils.publish_job_log import publish_job_log
+from shared.errors import vire_errors as errors
 from Vire.core.core_utils.fetch_buildreq import fetch_package_json
+from Vire.objects.validation_models import PkgJSONValidationParams, ValidatorContext
+from shared.errors import validation_errors
 from Vire.project_manifest.validator import validate_package_json
-
-from Vire.errors import errors
-from Vire.project_manifest.errors import config_errors
-from Vire.objects.dataclass_objects.validation_models import ValidatorContext, PkgJSONValidationParams
+from shared.event_handling.handler import dispatch_event
+from shared.events.error_event import ErrorEvent
 
 
-async def fetch_and_validate_pkgjson(
-    VC: ValidatorContext,
-    PJVP: PkgJSONValidationParams
-)-> bool | None:
+async def fetch_and_validate_pkgjson(VC: ValidatorContext, PJVP: PkgJSONValidationParams) -> bool | None:
     """
     Fetches and validates the package.json from user's repo & branch.
 
@@ -36,68 +31,17 @@ async def fetch_and_validate_pkgjson(
         await validate_package_json(package_json_str)
         return True
 
-    except config_errors.InvalidPackageJson as e:
-        await publish_job_log(dedent(
-            f"""
-            Error: VC-VD-031. Invalid 'package.json'.
-            Timestamp: {PJVP.ts}
-
-            Job Details:
-                Job UUID: {VC.job_uuid}
-                Commit SHA: {VC.commit_id}
-                Branch Name: {VC.branch}
-
-            Errors caused by:
-                Issue: {e}
-
-            The scripts in 'package.json' cannot be accepted by Vire. 
-            """), "VC-VD-031")
-
-    except errors.InvalidBranchError:
-        await publish_job_log(dedent(
-            f"""
-            Error: VC-VD-032. Branch does not exist.
-            Timestamp: {PJVP.ts}
-
-            Job Details:
-                Job UUID: {VC.job_uuid}
-                Commit SHA: {VC.commit_id}
-                Branch Name: {VC.branch}
-
-            Suggested fixes:
-                1. In the case of branch deletion, retry.
-
-            If branch exists and you see this error, create an issue on GitHub regarding this. (Internal parsing error)
-            """), "VC-VD-032")
-
-    except errors.RepoFileFetchError as e:
-        await publish_job_log(dedent(
-            f"""
-            Error: VC-VD-033. File fetch from remote failed.
-            Timestamp: {PJVP.ts}
-
-            Job Details:
-                Job UUID: {VC.job_uuid}
-                Commit SHA: {VC.commit_id}
-                Branch Name: {VC.branch}
-
-            Error details - {e}
-
-            Suggested Fixes:
-                1. Check {VC.provider.capitalize()}'s status
-                2. Could be caused by the package.json file being malformed.
-                3. Outdated Commit SHA because something was pushed right after the build started (1-3s delay between pushes.)
-            """), "VC-VD-033")
-
-    except errors.UnsupportedGitProvider as e:
-        await publish_job_log(dedent(
-            f"""
-            Error: VC-VD-034. Unsupported git provider {VC.provider.capitalize()}.
-            Timestamp: {PJVP.ts}
-
-            Details:
-                Job UUID: {VC.job_uuid}
-                Commit SHA: {VC.commit_id}
-                Branch Name: {VC.branch}
-                Issue: {e}
-            """), "VC-VD-034")
+    except (
+        validation_errors.InvalidPackageJsonError,
+        errors.InvalidBranchError,
+        errors.RepoFileFetchError,
+        errors.UnsupportedGitProviderError
+    ) as e:
+        await dispatch_event(
+            event=ErrorEvent(job_uuid=VC.job_uuid, user_uuid=VC.user_uuid, error=e),
+            job_details = {
+                "Job UUID": VC.job_uuid,
+                "Commit SHA": VC.commit_id,
+                "Branch Name": VC.branch
+            }
+        )

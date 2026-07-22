@@ -4,7 +4,7 @@ The module responsible for all the 'read' operations of the CRUD layer.
 
 from sqlalchemy.future import select
 
-from BuildScheduler.Scheduler.dataclass_models.scheduler_dc import WorkerCreationParams
+from BuildScheduler.Scheduler.utils.scheduler_dc import WorkerCreationParams
 from BuildScheduler.Scheduler.db.sqlite_orm.models import BuildData, BuildState
 from BuildScheduler.Scheduler.db.sqlite_orm.db import async_session
 from BuildScheduler.Scheduler.utils.queues_locks import db_build_queue, queue_insert_lock

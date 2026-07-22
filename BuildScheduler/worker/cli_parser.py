@@ -9,7 +9,7 @@ Functions -
 import argparse
 import json
 from BuildScheduler.worker.schema.worker_dataclasses import WorkerContext
-from BuildScheduler.worker.schema.errors import CredentialError
+from shared.errors.worker_errors import CredentialError
 
 
 def load_parser():

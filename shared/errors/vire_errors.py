@@ -1,0 +1,98 @@
+from dataclasses import dataclass
+
+from shared.errors.base_error import VireBaseError
+from shared.utils.types import Severity
+
+# Note: The comments on top of each class is for separating the classes at a glance
+
+# Invalid branch --
+@dataclass(slots=True, kw_only=True)
+class InvalidBranchError(VireBaseError):
+    """
+    Raise for Invalid / Unprovided branches
+    """
+
+    error_title: str = "Unable to fetch vire.toml. The provided branch was invalid."
+    error_code: str = "VC-VD-INVALID_BRANCH"
+    severity: Severity = "warn"
+
+    possible_causes: tuple[str, ...] | None = (
+        "Branch was deleted right after triggering the Vire webhook.",
+    )
+
+    notes: tuple[str, ...] | None = (
+        "If branch exists and you see this error, create an issue on GitHub regarding this. (Internal parsing error)",
+    )
+
+
+# Unsupported PMs --
+@dataclass(slots=True, kw_only=True)
+class UnsupportedPMError(VireBaseError):
+    """Raise for unsupported package managers"""
+
+    error_code: str = "VC-VD-UNSUPPORTED_PM"
+    error_title: str = "Unsupported package manager. The PM provided is unsupported."
+
+    severity: Severity = "warn"
+
+
+# Empty lockfile --
+@dataclass(slots=True, kw_only=True)
+class EmptyLockfileError(VireBaseError):
+    """Raise when lockfile is empty."""
+
+    error_code: str = "VC-VD-EMPTY_LOCKFILE"
+    error_title: str = "Empty lockfile in the provided branch."
+
+    severity: Severity = "warn"
+
+
+# No lockfile --
+@dataclass(slots=True, kw_only=True)
+class NoLockfileError(VireBaseError):
+    """Raise when unable to find a lockfile."""
+
+    error_code: str = "VC-VD-NO_LOCKFILE"
+    error_title: str = "No lockfile found in the branch. Details below"
+
+    severity: Severity = "warn"
+
+
+    possible_fixes: tuple[str, ...] | None = (
+        "Try setting 'dependencies=false' in vire.toml if installation of packages isn't needed for building the project.",
+        "Try running `npm in`"
+    )
+
+
+# Unsupported Git providers --
+@dataclass(slots=True, kw_only=True)
+class UnsupportedGitProviderError(VireBaseError):
+    """Raise when the git provider isn't supported."""
+    error_code: str = "VC-VD-UNSUPPORTED_GIT_PROVIDER"
+    error_title: str = "The git provider specified is not supported."
+
+    severity: Severity = "critical"
+
+    notes: tuple[str, ...] | None = (
+        "Check documentation for the details of this error.",
+    )
+
+
+# Repo file fetch error --
+@dataclass(slots=True, kw_only=True)
+class RepoFileFetchError(VireBaseError):
+    """Raise when raw file fetch from client provided URL fails."""
+    error_code: str = "VC-VD-FILE_FETCH_FAILED"
+    error_title: str = "Error: VC-VD-014. Git provider API failed."
+
+    severity: Severity = "critical"
+
+    possible_causes: tuple[str, ...] | None = (
+    "Check {VC.provider.capitalize()}'s status",
+    "Could be caused by the package.json file being malformed.",
+    "Outdated Commit SHA because something was pushed right after the build started (1-3s delay between pushes.)",
+    )
+
+    notes: tuple[str, ...] | None = (
+        "Check documentation for detailed information regarding the error.",
+    )

@@ -3,25 +3,26 @@ This module (create_container_job) handles container creation.
 
 Functions -
 1. setup_creation (sync, helper)
-2. sync_docker_run (sync, helper)
-3. container_create (async, helper)
+2. container_create (async, helper)
 """
 
 import asyncio
-from textwrap import dedent
 import time
 
-from BuildScheduler.shared.container_runtimes.runtime_dc import RuntimeMetadata
-from BuildScheduler.shared.logging.scheduler_logger import vire_logger
-from BuildScheduler.shared.shared_state import shared_config
+from shared.errors.container_runtime_errors import ContainerCreationFail
 from BuildScheduler.worker.schema.worker_dataclasses import WorkerContext
-from BuildScheduler.worker.utils.state import worker_config
-from BuildScheduler.shared.logging.pub_redis import publish_log_redis
-
-from BuildScheduler.worker.schema.errors import ContainerCreationFail, InstallReqMismatch, UnsupportedFramework
-from BuildScheduler.shared.container_runtimes.runtime_registry import RUNTIME_REGISTRY
-from BuildScheduler.shared.container_runtimes.base_runtime import ContainerRuntime
 from BuildScheduler.worker.utils.adapter import FRAMEWORK_REGISTRY
+from BuildScheduler.worker.utils.state import worker_config
+
+from shared.container_runtimes.base_runtime import ContainerRuntime
+from shared.container_runtimes.runtime_dc import RuntimeMetadata
+from shared.container_runtimes.runtime_registry import RUNTIME_REGISTRY
+
+from shared.logging.pub_redis import publish_log_redis
+from shared.shared_state import shared_config
+
+from shared.events.events import LogEvent
+from shared.event_handling.handler import dispatch_event
 
 
 # Helper
@@ -37,12 +38,12 @@ def setup_creation(worker_context: WorkerContext) -> tuple[str, str]:
 
     tuple : (image, cmd)
 
-    Raises worker.schema.errors.UnsupportedFramework if framework_registry.get returns None
+    Raises:
+    ---
+    UnsupportedFramework if framework_registry.get returns None
     """
 
     framework_adapter = FRAMEWORK_REGISTRY[worker_context.framework]
-    if not framework_adapter:
-        raise UnsupportedFramework(f"{worker_context.framework} is not supported.")
     try:
         image = framework_adapter.image
 
@@ -57,17 +58,13 @@ def setup_creation(worker_context: WorkerContext) -> tuple[str, str]:
         if worker_context.install_req:
             install_cmd = framework_adapter.install_command[worker_context.package_manager]
             cmd_body = f"{base} && {install_cmd} && {build_cmd}"
-        elif not worker_context.install_req:
-            cmd_body = f"{base} && {build_cmd}"
         else:
-            raise InstallReqMismatch("'install_req' can only be a bool.")
+            cmd_body = f"{base} && {build_cmd}"
 
         return image, cmd_body
-    except InstallReqMismatch as e:
-        raise e
-    except Exception as e:
-        vire_logger("critical", "[worker setup_creation] Unable to initialize setup. Details: %s", e)
-        raise e
+    except Exception:
+        raise
+
 
 async def container_create(worker_context: WorkerContext) -> None:
     """
@@ -84,45 +81,33 @@ async def container_create(worker_context: WorkerContext) -> None:
         image, cmd_body = setup_creation(worker_context=worker_context)
 
         if not image or not cmd_body:
-            raise ContainerCreationFail(f"{'Image' if not image else 'cmd'} Cannot be none.")
+            raise ContainerCreationFail(error_title="Creation of the isolated environment failed.")
         cmd = ["sh", "-c", cmd_body]
 
-        runtime_metadata = RuntimeMetadata(
-            **shared_config.CONTAINER_METADATA,
-            expires_at = str(expires_at)
-        )
+        runtime_metadata = RuntimeMetadata(**shared_config.CONTAINER_METADATA, expires_at=str(expires_at))
 
-        container_task = asyncio.to_thread(
-            runtime.create, 
-            job_uuid= worker_context.job_uuid,
-            image= image,
-            cmd= cmd,
-            metadata= runtime_metadata
+        await asyncio.to_thread(
+            runtime.create, job_uuid=worker_context.job_uuid, image=image, cmd=cmd, metadata=runtime_metadata
         )
-        await container_task
         container_log_generator = runtime.get_container_log(worker_context.job_uuid)
 
         for line in container_log_generator:
             str_line = line.decode("utf-8")
-            await publish_log_redis(
-                str_line,
-                user_uuid= worker_context.user_uuid,
-                job_uuid=worker_context.job_uuid
-            )
+            await publish_log_redis(str_line, user_uuid=worker_context.user_uuid, job_uuid=worker_context.job_uuid)
 
     except ContainerCreationFail as e:
-        await publish_log_redis(
-            line=dedent(
-                """
-                VC-WK-001. Internal error. 
+        await dispatch_event(event=LogEvent(
+            user_uuid=worker_context.user_uuid, job_uuid=worker_context.job_uuid,
+            diag_code = "VC-IN-001", source="worker", severity="critical",
+            summary="Container creation failed. Internal Error.",
+            exception_name=type(e).__name__, propagate_state=True,
+            internal_log=e.error_title
+        ))
 
-                Note: Configuration error. If you see this, open an issue on github with a screenshot.
-                """),
-            user_uuid= worker_context.user_uuid, job_uuid=worker_context.job_uuid
-        )
-        vire_logger("critical", "Container creation failed. Details: %s", str(e))
     except Exception as e:
-        vire_logger(
-            "critical", "[container_create] Container creation for job '%s' was unsucessful. Details: %s",
-            worker_context.job_uuid, e
-        )
+        await dispatch_event(event=LogEvent(
+            job_uuid=worker_context.job_uuid,diag_code="VC-IN-001", severity="critical",
+            summary = "Container creation was unsuccessful.",
+            exception_name=type(e).__name__, source="worker",
+            internal_log="Unexpected error (Exception) when creating the container."
+        ))

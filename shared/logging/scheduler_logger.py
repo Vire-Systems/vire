@@ -12,8 +12,9 @@ from typing_extensions import Callable
 
 def vire_logger(
     log_type: Literal["info", "warn", "error", "critical", "exit"],
-    obj:str, *args
+    obj:str, *args: str
 )-> None:
+
     """Logging function for Scheduler (shared)"""
     logger = logging.getLogger()
     l_type = log_type.lower()

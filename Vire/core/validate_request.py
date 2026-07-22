@@ -12,7 +12,7 @@ from Vire.core.validate.validate_lockfile import fetch_and_validate_lockfile
 from Vire.core.validate.validate_vire_toml import validate_vire_toml
 from Vire.core.validate.resolve_packagejson import fetch_and_validate_pkgjson
 
-from Vire.objects.dataclass_objects.validation_models import(
+from Vire.objects.validation_models import(
     ValidatorContext,
     ParsedTOMLObject,
     LockfileValidationParams,
@@ -38,12 +38,12 @@ async def validate_details(VC: ValidatorContext)-> ParsedTOMLObject | None:
     Errors raised by the base functions used (caught by underlying functions):
     
         1. InvalidBranchError (fetch_vire_toml)
-        2. InvalidVireToml (parse_toml)
-        3. EmptyLockfile, KeyErrror, NoLockfile (fetch_lockfile)
-        4. InvalidPackageJson, PackageManagerException, InvalidOutDir (validate_toml)
+        2. InvalidVireTomlError (parse_toml)
+        3. EmptyLockfile, KeyErrror, NoLockfileError (fetch_lockfile)
+        4. InvalidPackageJsonError, PackageManagerException, InvalidOutDirError (validate_toml)
         5. InvalidBranchError (fetch_package_json)
-        6. InvalidPackageJson (validate_package_json)
-        7. UnsupportedGitProvider (fetch_vire_toml, fetch_package_json, fetch_lockfile_name)
+        6. InvalidPackageJsonError (validate_package_json)
+        7. UnsupportedGitProviderError (fetch_vire_toml, fetch_package_json, fetch_lockfile_name)
     """
     
     # Helper for datetime string
