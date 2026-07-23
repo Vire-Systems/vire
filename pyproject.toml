@@ -1,0 +1,43 @@
+[project]
+name = "Vire"
+version = "0.001"
+description = "A CI/CD platform for static files"
+requires-python = ">=3.14.4"
+
+
+
+[tool.basedpyright]
+pythonPlatform = "Linux"
+exclude = [
+    "**/node_modules",
+    "**/__pycache__",
+    "**/__init__.py",
+    "**/tests",
+    "venv",
+    ".venv"
+    
+    
+]
+ignore = [
+    "**/tests/**",
+    "**/node_modules",
+    "**/__pycache__"
+]
+
+venvPath = "."
+venv = "venv"
+
+
+[tool.ruff]
+extend-exclude = [
+    "tests"
+]
+
+[tool.ruff.lint]
+ignore = [
+    "E402"
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"

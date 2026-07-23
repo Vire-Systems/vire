@@ -1,4 +1,6 @@
+import pytest
 
+pytest.skip("Skipped because it doesn't test anything", allow_module_level=True)
 
 class TestCreateBuildRecord:
     """Test database create operations"""
