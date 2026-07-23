@@ -3,8 +3,29 @@ name = "Vire"
 version = "0.001"
 description = "A CI/CD platform for static files"
 requires-python = ">=3.14.4"
+dependencies = [
+    "aiosqlite==0.22.1",
+    "annotated-doc==0.0.4",
+    "docker==7.1.0",
+    "fastapi==0.138.1",
+    "hiredis==3.4.0",
+    "python-dotenv==1.2.2",
+    "PyYAML==6.0.3",
+    "redis==8.0.1",
+    "requests==2.34.2",
+    "SQLAlchemy==2.0.51",
+    "typing-inspection==0.4.2",
+    "uvicorn==0.49.0",
+    "uvloop==0.22.1",
+    "watchfiles==1.2.0",
+    "httpx==0.28.1",
+]
 
-
+[project.optional-dependencies]
+dev = [
+    "pytest-asyncio==1.4.0",
+    "pytest-cov==7.1.0"
+]
 
 [tool.basedpyright]
 pythonPlatform = "Linux"
