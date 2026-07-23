@@ -3,6 +3,9 @@ This module (remote_adapter) is responsible for providing remote (github,gitlab,
 
 """
 
+from typing import override
+
+
 class GitProviderAdapter:
     """
     Master class for all provider specific classes.
@@ -12,15 +15,15 @@ class GitProviderAdapter:
         2. return_clone_link
 
     """
-    def get_raw_url(self, user: str, repo_name: str, branch: str, path_name: str):
+    def get_raw_url(self, user: str, repo_name: str, branch: str, path_name: str)-> str:
         """Returns raw url for the path specified."""
         raise NotImplementedError
 
-    def return_clone_link(self, user, repo_name):
+    def return_clone_link(self, user: str, repo_name: str)-> str:
         """Returns a repository clone link."""
         raise NotImplementedError
 
-    def return_default_branch(self):
+    def return_default_branch(self)-> str:
         """Returns default fallback branch, ie; 'main'."""
         return 'main'
 
@@ -39,16 +42,24 @@ class GithubAdapter(GitProviderAdapter):
     """
     Adapter for Github. Inherits 'GitProviderAdapter'.
     """
-    def get_raw_url(self, user, repo_name, branch, path_name):
+    @override
+    def get_raw_url(
+        self,
+        user: str, 
+        repo_name: str,
+        branch: str,
+        path_name: str)-> str:
         return(
             f"https://raw.githubusercontent.com/{user}/{repo_name}/{branch}/{path_name}"
         )
 
+    @override
     def return_clone_link(self, user, repo_name):
         return(
             f"https://github.com/{user}/{repo_name}.git"
         )
 
+    @override
     def return_list_tree(self, user, reponame, commit_id):
         return(
             f"https://api.github.com/repos/{user}/{reponame}/git/trees/{commit_id}"

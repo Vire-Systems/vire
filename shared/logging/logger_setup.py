@@ -11,30 +11,30 @@ import logging
 import queue
 from logging.handlers import QueueHandler, QueueListener
 
-LISTENER = None
+Listener = None
 
 
-def setup_async_logging(log_file, log_level: int = logging.INFO):
+def setup_async_logging(log_file: str, log_level: int = logging.INFO):
     """A logging setup using logging module's built in QueueHandler and QueueListener."""
-    global LISTENER
+    global listener
 
     file_handler = logging.FileHandler(log_file, encoding="utf-8")
 
     formatter = logging.Formatter(fmt="%(asctime)s [%(levelname)s] %(module)s : %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
 
     file_handler.setFormatter(formatter)
-    log_queue = queue.Queue()
+    log_queue: queue.Queue[logging.LogRecord] = queue.Queue()
 
     root_logger = logging.getLogger()
     root_logger.setLevel(log_level)
     root_logger.addHandler(QueueHandler(log_queue))
 
-    LISTENER = QueueListener(log_queue, file_handler, respect_handler_level=True)
-    LISTENER.start()
+    Listener = QueueListener(log_queue, file_handler, respect_handler_level=True)
+    Listener.start()
 
 
 def stop_async_logging():
     """Stops async logging."""
-    global LISTENER
-    if LISTENER:
-        LISTENER.stop()
+    global Listener
+    if Listener:
+        Listener.stop()

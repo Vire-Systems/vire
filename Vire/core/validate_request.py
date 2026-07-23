@@ -17,7 +17,6 @@ from Vire.objects.validation_models import(
     ParsedTOMLObject,
     LockfileValidationParams,
     TOMLValidationParams,
-    PkgJSONValidationParams
 )
 
 # Validate
@@ -55,10 +54,7 @@ async def validate_details(VC: ValidatorContext)-> ParsedTOMLObject | None:
 
     # Main logic -
     # Fetch and parse toml
-        toml_data: ParsedTOMLObject | None = await fetch_and_parse_toml(
-            VC=VC,
-            ts=ts()
-        )
+        toml_data: ParsedTOMLObject | None = await fetch_and_parse_toml(VC=VC)
         if not toml_data:
             return
 
@@ -72,9 +68,7 @@ async def validate_details(VC: ValidatorContext)-> ParsedTOMLObject | None:
         
         lockfile_name = await fetch_and_validate_lockfile(
             LVP=lockfile_params,
-            VC=VC,
-            ts=ts(),
-            common_line=common_line
+            VC=VC
         )
         if not lockfile_name:
             return
@@ -90,13 +84,7 @@ async def validate_details(VC: ValidatorContext)-> ParsedTOMLObject | None:
             return
 
     # fetch and validate package.json
-        validate_pkgjson_obj = PkgJSONValidationParams(
-            lockfile_name=lockfile_name,
-            common_line=common_line,
-            ts=ts()
-        )
-
-        if not await fetch_and_validate_pkgjson(VC=VC, PJVP=validate_pkgjson_obj):
+        if not await fetch_and_validate_pkgjson(VC=VC):
             return
 
         return toml_data

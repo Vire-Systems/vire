@@ -17,7 +17,7 @@ from Vire.objects.validation_models import ParsedTOMLObject, ValidatorContext
 from Vire.project_manifest.parse_toml import parse_toml
 
 
-async def fetch_and_parse_toml(VC: ValidatorContext, ts: str) -> ParsedTOMLObject | None:
+async def fetch_and_parse_toml(VC: ValidatorContext) -> ParsedTOMLObject | None:
     """
     This function fetches and parses vire.toml.
 

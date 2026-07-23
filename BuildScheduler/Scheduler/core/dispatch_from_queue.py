@@ -13,7 +13,7 @@ from shared.events.events import LogEvent
 from shared.shared_state import shared_config
 
 
-async def get_worker_count(fetch_all=False) -> int | None:
+async def get_worker_count(fetch_all: bool =False) -> int | None:
     try:
         """
         Fetch active worker count from docker API.
@@ -37,7 +37,7 @@ async def get_worker_count(fetch_all=False) -> int | None:
     except ContainerAdapterAPIError as e:
         await dispatch_event(LogEvent(
             diag_code = "VC-IN-UNEXPECTED_INTERNAL_ERROR", severity="critical",
-            internal_log="Unexpected error occured while deleting a container (Exception)",
+            internal_log="Unexpected error occured while getting container count (Exception)",
             summary= e.error_title,
             exception_name=str(type(e).__name__), source = "scheduler"
         ))
@@ -49,7 +49,7 @@ async def launch_workers(job_uuids: list[str]) -> None:
 
     for job_uuid in job_uuids:
         task_list.append(asyncio.create_task(scheduler_create_worker(job_uuid)))
-    await asyncio.gather(*task_list)
+    _ = await asyncio.gather(*task_list)
 
 
 async def dispatch_queued_job(available_slots: int) -> Literal["queued", "started"] | None:
@@ -63,7 +63,7 @@ async def dispatch_queued_job(available_slots: int) -> Literal["queued", "starte
         job_uuids: list[str] = []
         for _ in range(available_slots):
             try:
-                job_uuid = queues_locks.db_build_queue.get_nowait()
+                job_uuid: str = queues_locks.db_build_queue.get_nowait()
                 job_uuids.append(job_uuid)
             except asyncio.QueueEmpty:
                 break

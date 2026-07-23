@@ -27,4 +27,4 @@ async def terminate_worker(job_uuid: str):
 async def terminate_workers(job_uuids: list[str]):
 
     tasks = [asyncio.create_task(terminate_worker(job_uuid=j_uuid)) for j_uuid in job_uuids]
-    asyncio.gather(*tasks)
+    _ = asyncio.gather(*tasks)

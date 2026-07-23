@@ -4,13 +4,13 @@ The module resposible for formatting:
    2. Errors into internal logs.
 """
 
-from typing import Mapping, Sequence
+from collections.abc import Mapping, Sequence
 from json import dumps
 from shared.event_handling.handler_context import EventHandlerContext
 
 
 
-def format_internal_log(context: EventHandlerContext, extra_details: dict)-> str:
+def format_internal_log(context: EventHandlerContext, extra_details: dict[str, str])-> str:
     log_dict = {
         "event": context.event,
         "timestamp": str(context.timestamp),

@@ -3,7 +3,7 @@ import logging
 import uvicorn
 from dotenv import load_dotenv
 
-load_dotenv("/home/vire/vire/.env")
+_ = load_dotenv("/home/vire/vire/.env")
 
 from application import app
 from shared.logging.logger_setup import setup_async_logging, stop_async_logging

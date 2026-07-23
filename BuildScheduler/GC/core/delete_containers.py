@@ -58,7 +58,7 @@ async def batch_remove() -> None:
             await update_job_status([job_uuid async for job_uuid in expired_jobs], error_code="VC-GC-001 ")
             tasks.append(asyncio.create_task(remove_single_container(job_uuid)))
 
-        await asyncio.gather(*tasks, return_exceptions=True)
+        _ =await asyncio.gather(*tasks, return_exceptions=True)
 
     except Exception as e:
         await dispatch_event(LogEvent(

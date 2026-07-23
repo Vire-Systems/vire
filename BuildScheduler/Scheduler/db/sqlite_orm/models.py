@@ -11,6 +11,7 @@ Functions -
 from datetime import datetime
 
 from sqlalchemy import TIMESTAMP, Boolean, Integer, String, func
+from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlalchemy.orm import Mapped, mapped_column
 
 from BuildScheduler.Scheduler.db.sqlite_orm.db import Base, engine
@@ -32,7 +33,7 @@ class BuildData(Base):
         branch: str
     """
 
-    __tablename__ = "BuildData"
+    __tablename__: str = "BuildData"
     job_uuid: Mapped[str] = mapped_column(String, nullable=False, primary_key=True)
     user_uuid: Mapped[str] = mapped_column(String, nullable=False)
     remote_link: Mapped[str] = mapped_column(String, nullable=False)
@@ -52,7 +53,7 @@ class BuildState(Base):
     Only running / queued builds should be present here.
     """
 
-    __tablename__ = "BuildState"
+    __tablename__: str = "BuildState"
     job_uuid: Mapped[str] = mapped_column(String, nullable=False, primary_key=True)
     user_uuid: Mapped[str] = mapped_column(String, nullable=False)
     status: Mapped[str] = mapped_column(String, nullable=False)
@@ -62,7 +63,7 @@ class BuildState(Base):
     error: Mapped[str] = mapped_column(String, nullable=True)
 
 
-async def init_db():
+async def init_db(engine: AsyncEngine = engine):
     """Initialize the database and start sqlalchemy engine."""
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)

@@ -7,14 +7,14 @@ Functions -
 
 from shared.errors import vire_errors as errors
 from Vire.core.core_utils.fetch_buildreq import fetch_package_json
-from Vire.objects.validation_models import PkgJSONValidationParams, ValidatorContext
+from Vire.objects.validation_models import ValidatorContext
 from shared.errors import validation_errors
 from Vire.project_manifest.validator import validate_package_json
 from shared.event_handling.handler import dispatch_event
 from shared.events.error_event import ErrorEvent
 
 
-async def fetch_and_validate_pkgjson(VC: ValidatorContext, PJVP: PkgJSONValidationParams) -> bool | None:
+async def fetch_and_validate_pkgjson(VC: ValidatorContext) -> bool | None:
     """
     Fetches and validates the package.json from user's repo & branch.
 
@@ -28,7 +28,7 @@ async def fetch_and_validate_pkgjson(VC: ValidatorContext, PJVP: PkgJSONValidati
         package_json_str = await fetch_package_json(
             provider=VC.provider, remote_user=VC.remote_user, remote_reponame=VC.remote_reponame, branch=VC.branch
         )
-        await validate_package_json(package_json_str)
+        _ = await validate_package_json(package_json_str)
         return True
 
     except (

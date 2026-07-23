@@ -16,7 +16,7 @@ def load_parser():
     """argparse terminal argument parser."""
     parser = argparse.ArgumentParser(description="An isolated,individual worker process handling builds.")
 
-    parser.add_argument(
+    _ = parser.add_argument(
         "--json_struct",
         type=str,
         required=True,
@@ -35,7 +35,7 @@ def load_parser():
         }'""",
     )
     args = parser.parse_args()
-    json_struct: dict = json.loads(args.json_struct)
+    json_struct = json.loads(args.json_struct)
 
     # Variables updation.
     try:

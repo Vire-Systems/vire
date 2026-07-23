@@ -22,7 +22,7 @@ from Vire.utils import async_requests
 async def lifespan(app: FastAPI):
     """FastAPI lifespan CM"""
     vire_logger("info", "[Vire core] start up.")
-    tasks = []
+    tasks: list[asyncio.Task[None]] = []
     await init_db()
     tasks.append(asyncio.create_task(scheduler_loop()))
     try:
@@ -37,8 +37,8 @@ async def lifespan(app: FastAPI):
         await r.aclose()
         vire_logger("info", "[pub_redis] shared client closed.")
         for task in tasks:
-            task.cancel()
-        await asyncio.gather(*tasks, return_exceptions=True)
+            _ = task.cancel()
+        _ = await asyncio.gather(*tasks, return_exceptions=True)
 
 
 app = FastAPI(lifespan=lifespan)

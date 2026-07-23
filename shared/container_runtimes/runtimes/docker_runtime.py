@@ -10,7 +10,8 @@ This module provides the `DockerRuntime` implementation.
 
 import asyncio
 import time
-from typing import AsyncGenerator, Generator
+from collections.abc import AsyncGenerator, Generator
+from typing import override
 
 import docker
 from docker.client import DockerClient
@@ -29,15 +30,17 @@ from shared.container_runtimes.runtime_dc import RuntimeMetadata
 
 class DockerRuntime(ContainerRuntime):
     def __init__(self):
-        self.client = docker.from_env()
+        self.client: DockerClient = docker.from_env()
 
     # Client ----
+    @override
     def get_client(self) -> DockerClient:
         """Return the docker client."""
         return self.client
 
 
     # Container creation ---
+    @override
     def create(self, job_uuid: str, image: str, cmd: list[str], metadata: RuntimeMetadata) -> None:
         """
         Run a docker container synchronously.
@@ -55,7 +58,7 @@ class DockerRuntime(ContainerRuntime):
                 raise ValueError("expires_at is required for container creation.")
 
             labels = {"managed_by": metadata.managed_by, "expires_at": str(metadata.expires_at)}
-            client.containers.run(
+            _ = client.containers.run(
                 name=job_uuid,
                 image=image,
                 command=cmd,
@@ -75,12 +78,13 @@ class DockerRuntime(ContainerRuntime):
 
 
     # Remove container ----
+    @override
     def remove(self, job_uuid: str) -> None:
         """Name (UUID4 used for naming) based container remover"""
         try:
             client = self.get_client()
             container_obj = client.containers.get(job_uuid)
-            container_obj.wait()
+            _ = container_obj.wait()
             container_obj.remove(force=True)
 
         except NotFound:
@@ -98,6 +102,7 @@ class DockerRuntime(ContainerRuntime):
 
 
     # Extract artifacts ----
+    @override
     def stream_file(self, job_uuid: str, output_path: str, path_to_archive: str) -> None:
         """Stream the file content inside the docker container as an archive (tar file)."""
 
@@ -107,7 +112,7 @@ class DockerRuntime(ContainerRuntime):
 
             with open(path_to_archive, "wb") as tar_file:
                 for chunk in stream:
-                    tar_file.write(chunk)
+                    _ = tar_file.write(chunk)
 
         except NotFound as e:
             raise OutputDirNotFound(
@@ -116,7 +121,8 @@ class DockerRuntime(ContainerRuntime):
 
 
     # Fetch log lines from container ----
-    def get_container_log(self, job_uuid) -> Generator[bytes, None, None]:
+    @override
+    def get_container_log(self, job_uuid: str) -> Generator[bytes, None, None]:
         """Yield a line of stdout from the container."""
         try:
             client = self.get_client()
@@ -130,7 +136,8 @@ class DockerRuntime(ContainerRuntime):
                 error_title="Unable to fetch container logs from container. Unexpected error."
             ) from e
 
-
+    # List Scheduler managed containers
+    @override
     async def list_managed_containers(
         self, metadata: RuntimeMetadata, count: bool, all: bool = False
     ) -> int | AsyncGenerator[str, None]:
@@ -172,7 +179,8 @@ class DockerRuntime(ContainerRuntime):
         except Exception as e:
             raise ContainerAdapterAPIError(error_title="unable to get Scheduler managed containers.") from e
 
-
+    # List containers that have expired
+    @override
     async def list_expired_containers(self, metadata: RuntimeMetadata) -> AsyncGenerator[str, None]:
         """
         Yield the job_uuids (aka names) of expired containers.

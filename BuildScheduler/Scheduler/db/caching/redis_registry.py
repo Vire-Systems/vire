@@ -7,7 +7,7 @@ from Vire.models.pydantic_classes import BuildRequestModel
 
 async def register_job_with_redis(BRM: BuildRequestModel, state: Literal["validating", "passed", "failed"]) -> None:
     async with client as r:
-        await r.hset(
+        _ = await r.hset(
             f"job_session:{BRM.user_uuid}/{BRM.job_uuid}",
             mapping={
                 "core_id": shared_config.CORE_ID,

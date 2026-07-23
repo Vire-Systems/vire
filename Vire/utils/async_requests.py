@@ -29,7 +29,7 @@ async def _send_request_helper(client: httpx.AsyncClient, url: str)-> httpx.Resp
     async with semaphore:
         try:
             response = await client.get(url, timeout=timeout)
-            response.raise_for_status()
+            _ = response.raise_for_status()
             return response
         except httpx.HTTPStatusError as e:
             status_code = e.response.status_code

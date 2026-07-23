@@ -8,7 +8,7 @@ import os
 from dotenv import load_dotenv
 
 
-load_dotenv("/home/vire/vire/.env")
+_ = load_dotenv("/home/vire/vire/.env")
 
 from BuildScheduler.worker.cli_parser import load_parser
 from BuildScheduler.worker.core.cleanup_container import remove_container
@@ -28,7 +28,7 @@ from shared.events.error_event import ErrorEvent
 runtime: ContainerRuntime = RUNTIME_REGISTRY[worker_config.CONTAINER_RUNTIME]()
 
 
-def setup_logfile_location(job_uuid):
+def setup_logfile_location(job_uuid: str):
     """Sets up the logfile directory and locations."""
     worker_log_dir = os.path.join(worker_config.WORKER_LOGDIR, job_uuid)
     os.makedirs(worker_log_dir, exist_ok=True)

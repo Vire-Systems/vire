@@ -439,7 +439,7 @@ class TestFetchAndParseToml:
         with patch(PATCH_REQUEST, new_callable=AsyncMock, return_value=mock_resp), \
              patch(PATCH_LOGGER), \
              patch(PATCH_REDIS, new_callable=AsyncMock):
-            result = await fetch_and_parse_toml(vc, ts="01-01-2024, 00:00:00")
+            result = await fetch_and_parse_toml(VC=vc)
 
         assert isinstance(result, ParsedTOMLObject)
         assert result.framework == "vite"
@@ -458,7 +458,7 @@ class TestFetchAndParseToml:
         with patch(PATCH_REQUEST, new_callable=AsyncMock, return_value=mock_resp), \
              patch(PATCH_LOGGER), \
              patch(PATCH_REDIS, new_callable=AsyncMock) as mock_redis:
-            result = await fetch_and_parse_toml(vc, ts="01-01-2024, 00:00:00")
+            result = await fetch_and_parse_toml(vc)
             print(mock_redis.await_count)
 
         # Returns None on validation failure
@@ -477,7 +477,7 @@ class TestFetchAndParseToml:
         with patch(PATCH_REQUEST, new_callable=AsyncMock, return_value=mock_resp), \
              patch(PATCH_LOGGER), \
              patch(PATCH_REDIS, new_callable=AsyncMock):
-            result = await fetch_and_parse_toml(vc, ts="01-01-2024, 00:00:00")
+            result = await fetch_and_parse_toml(vc)
 
         assert result is None
 
@@ -490,7 +490,7 @@ class TestFetchAndParseToml:
 
         with patch(PATCH_LOGGER), \
              patch(PATCH_REDIS, new_callable=AsyncMock):
-            result = await fetch_and_parse_toml(vc, ts="01-01-2024, 00:00:00")
+            result = await fetch_and_parse_toml(vc)
 
         assert result is None
 
@@ -603,9 +603,7 @@ class TestFetchAndValidateLockfile:
         vc = make_validator_context()
 
         with patch(PATCH_LOGGER), patch(PATCH_REDIS, new_callable=AsyncMock):
-            result = await fetch_and_validate_lockfile(
-                LVP=lvp, VC=vc, ts="01-01-2024", common_line="main"
-            )
+            result = await fetch_and_validate_lockfile(LVP=lvp, VC=vc)
 
         # install_req=False → returns None without calling any network
         assert result is None
@@ -626,7 +624,7 @@ class TestFetchAndValidateLockfile:
         with patch(PATCH_LOGGER), \
              patch(PATCH_REDIS, new_callable=AsyncMock) as mock_redis:
             result = await fetch_and_validate_lockfile(
-                LVP=lvp, VC=vc, ts="01-01-2024", common_line="main"
+                LVP=lvp, VC=vc
             )
 
         assert result is None
@@ -644,7 +642,7 @@ class TestFetchAndValidateLockfile:
              patch(PATCH_LOGGER), \
              patch(PATCH_REDIS, new_callable=AsyncMock):
             result = await fetch_and_validate_lockfile(
-                LVP=lvp, VC=vc, ts="01-01-2024", common_line="main"
+                LVP=lvp, VC=vc
             )
         assert result == "package-lock.json"
 
@@ -660,7 +658,7 @@ class TestFetchAndValidateLockfile:
              patch(PATCH_LOGGER), \
              patch(PATCH_REDIS, new_callable=AsyncMock):
             result = await fetch_and_validate_lockfile(
-                LVP=lvp, VC=vc, ts="01-01-2024", common_line="main"
+                LVP=lvp, VC=vc
             )
 
         assert result == "pnpm-lock.yaml"
@@ -685,7 +683,7 @@ class TestFetchAndValidateLockfile:
              patch(PATCH_LOGGER), \
              patch(PATCH_REDIS, new_callable=AsyncMock) as mock_redis:
             result = await fetch_and_validate_lockfile(
-                LVP=lvp, VC=vc, ts="01-01-2024", common_line="main"
+                LVP=lvp, VC=vc
             )
 
         # NoLockfileError is not in the caught list — it propagates. 
@@ -732,7 +730,7 @@ class TestFetchAndValidatePkgjson:
         with patch(PATCH_REQUEST, new_callable=AsyncMock, return_value=mock_resp), \
              patch(PATCH_LOGGER), \
              patch(PATCH_REDIS, new_callable=AsyncMock):
-            result = await fetch_and_validate_pkgjson(VC=vc, PJVP=pjvp)
+            result = await fetch_and_validate_pkgjson(VC=vc)
 
         assert result is True
 
@@ -747,7 +745,7 @@ class TestFetchAndValidatePkgjson:
         with patch(PATCH_REQUEST, new_callable=AsyncMock, return_value=mock_resp), \
              patch(PATCH_LOGGER), \
              patch(PATCH_REDIS, new_callable=AsyncMock) as mock_redis:
-            result = await fetch_and_validate_pkgjson(VC=vc, PJVP=pjvp)
+            result = await fetch_and_validate_pkgjson(VC=vc)
 
         assert result is None
         mock_redis.assert_called()
@@ -762,7 +760,7 @@ class TestFetchAndValidatePkgjson:
 
         with patch(PATCH_LOGGER), \
              patch(PATCH_REDIS, new_callable=AsyncMock):
-            result = await fetch_and_validate_pkgjson(VC=vc, PJVP=pjvp)
+            result = await fetch_and_validate_pkgjson(VC=vc)
 
         assert result is None
 

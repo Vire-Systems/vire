@@ -4,7 +4,7 @@ from typing import Literal
 
 from BuildScheduler.worker.utils.state import worker_config
 
-status_update_allowlist: dict[str, list] = {
+status_update_allowlist: dict[str, list[str]] = {
     "queued": ["running", "crashed", "finished", "cancelled"],
     "running": ["crashed", "finished", "cancelled"],
     "crashed": [],
@@ -19,8 +19,8 @@ def db_session(db_name: str):
     try:
         cursor = connection.cursor()
 
-        cursor.execute("PRAGMA journal_mode=WAL")
-        cursor.execute("PRAGMA busy_timeout=5000")
+        _ = cursor.execute("PRAGMA journal_mode=WAL")
+        _ = cursor.execute("PRAGMA busy_timeout=5000")
 
         yield connection
         connection.commit()
@@ -38,7 +38,7 @@ def fetch_job_status(job_uuid: str, user_uuid: str) -> str:
             SELECT status FROM BuildState
             WHERE job_uuid=? AND user_uuid=?
             """
-        result: tuple[str] = cursor.execute(query, (job_uuid, user_uuid)).fetchone()
+        result: tuple[str] = cursor.execute(query, (job_uuid, user_uuid)).fetchone() # pyright: ignore[reportAny]
         return result[0]
 
 def update_job_state(
@@ -59,4 +59,4 @@ def update_job_state(
             WHERE
             job_uuid=? AND status=?
             """
-        cursor.execute(query, (status, job_uuid, prev_status))
+        _ = cursor.execute(query, (status, job_uuid, prev_status))

@@ -16,8 +16,6 @@ from Vire.core.core_utils.fetch_lockfile import fetch_lockfile_name
 async def fetch_and_validate_lockfile(
     LVP: LockfileValidationParams,
     VC: ValidatorContext,
-    ts: str,
-    common_line: str
 )-> str | None:
     """
     Fetch and validate lockfile against a matrix of supported package managers.

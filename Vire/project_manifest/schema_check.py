@@ -6,6 +6,8 @@ Functions -
 1. check_toml_schema
 """
 
+from typing import Any
+
 from shared.event_handling.handler import dispatch_event
 from shared.events.events import LogEvent
 from Vire.objects.validation_models import ParsedTOMLObject
@@ -39,8 +41,8 @@ async def check_toml_schema(toml_dict: dict) -> ParsedTOMLObject:
         if not project:
             raise InvalidVireTomlError(error_title="[project] table not found")
 
-        output_dir = project.get("output_dir")
-        framework_version = project.get("framework_version")
+        output_dir:str = project.get("output_dir")
+        framework_version: str = project.get("framework_version")
         dependencies_req: bool = project.get("dependencies")
 
         if not framework:

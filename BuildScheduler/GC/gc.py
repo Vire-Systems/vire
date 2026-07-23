@@ -8,7 +8,7 @@ import os
 
 from dotenv import load_dotenv
 
-load_dotenv("/home/vire/vire/.env")
+_ = load_dotenv("/home/vire/vire/.env")
 
 from BuildScheduler.GC.core.delete_containers import batch_remove
 from BuildScheduler.GC.utils.state import gc_config

@@ -1,6 +1,6 @@
 """The master class inherited by all Container runtime classes"""
 
-from typing import AsyncGenerator, Generator
+from collections.abc import AsyncGenerator, Generator
 
 from shared.container_runtimes.runtime_dc import RuntimeMetadata
 
