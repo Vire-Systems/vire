@@ -87,7 +87,6 @@ async def complete_final_tasks(worker_context: WorkerContext):
 async def main(worker_context: WorkerContext):
     job_uuid = worker_context.job_uuid
     try:
-        assert job_uuid is not None, "Job UUID is None"
         await container_create(worker_context)
         await complete_final_tasks(worker_context=worker_context)
 
