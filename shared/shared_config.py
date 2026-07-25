@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from types import MappingProxyType
 
+
 @dataclass(frozen=True, slots=True)
 class SharedConfig:
     CORE_ID: str

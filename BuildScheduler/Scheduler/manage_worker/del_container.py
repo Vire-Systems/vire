@@ -14,7 +14,10 @@ from BuildScheduler.Scheduler.db.sqlite_orm.crud.update import update_job_status
 from BuildScheduler.Scheduler.utils import mutex_locks, state
 from BuildScheduler.Scheduler.utils.state import scheduler_config
 from shared.container_runtimes.runtime_registry import RUNTIME_REGISTRY
-from shared.errors.container_runtime_errors import ContainerAdapterAPIError, ContainerNotFound
+from shared.errors.container_runtime_errors import (
+    ContainerAdapterAPIError,
+    ContainerNotFound,
+)
 from shared.event_handling.handler import dispatch_event
 from shared.events.events import ContainerTimeoutEvent, LogEvent
 from shared.shared_state import shared_config
@@ -40,14 +43,18 @@ async def delayed_delete_helper(job_uuid: str, user_uuid: str) -> None:
         await update_job_status(job_uuid=job_uuid, status_msg="timed_out")
 
     except ContainerAdapterAPIError as e:
-        await dispatch_event(LogEvent(
-            job_uuid=job_uuid,
-            diag_code = "VC-IN-UNEXPECTED_INTERNAL_ERROR", severity="critical",
-            internal_log="Unexpected error occured while deleting a container (Exception)",
-            summary= e.error_title,
-            exception_name=str(type(e).__name__), source = "scheduler"
-        ))
-    
+        await dispatch_event(
+            LogEvent(
+                job_uuid=job_uuid,
+                diag_code="VC-IN-UNEXPECTED_INTERNAL_ERROR",
+                severity="critical",
+                internal_log="Unexpected error occured while deleting a container (Exception)",
+                summary=e.error_title,
+                exception_name=str(type(e).__name__),
+                source="scheduler",
+            )
+        )
+
     except Exception as e:
         await dispatch_event(
             event=LogEvent(
@@ -61,9 +68,12 @@ async def delayed_delete_helper(job_uuid: str, user_uuid: str) -> None:
             )
         )
 
+
 async def delayed_delete(job_uuid: str, user_uuid: str) -> None:
     """Create a task (asyncio.Task) scheduling the deletion of the container specified by name (job_uuid is name)."""
-    task = asyncio.create_task(delayed_delete_helper(job_uuid=job_uuid, user_uuid=user_uuid))
+    task = asyncio.create_task(
+        delayed_delete_helper(job_uuid=job_uuid, user_uuid=user_uuid)
+    )
     async with mutex_locks.task_removal_lock:
         state.removal_tasks.add(task)
         task.add_done_callback(state.removal_tasks.discard)

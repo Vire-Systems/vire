@@ -4,15 +4,17 @@ This module (scheduler_dc 'scheduler dataclasses') is responsible for providing 
 
 from dataclasses import dataclass
 
+
 @dataclass(frozen=True, slots=True)
 class SchedulerConfig:
-    REDIS_URL : str
-    SQLITE_DB_PATH : str
-    DB_URL: str 
+    REDIS_URL: str
+    SQLITE_DB_PATH: str
+    DB_URL: str
     PYTHON_BIN_PATH: str
     WORKER_PACKAGE_LOCATION: str
     MAX_BUILDS_NUMBER: int
     CONTAINER_REMOVAL_DELAY: int
+
 
 @dataclass(frozen=True, slots=True)
 class WorkerCreationParams:
@@ -22,6 +24,7 @@ class WorkerCreationParams:
     Attributes -
         job_uuid, user_uuid, remote, repo_name, framework, pm, install_req, output_dir, commit_id
     """
+
     job_uuid: str
     user_uuid: str
     remote_link: str

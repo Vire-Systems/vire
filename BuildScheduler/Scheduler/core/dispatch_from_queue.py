@@ -13,7 +13,7 @@ from shared.events.events import LogEvent
 from shared.shared_state import shared_config
 
 
-async def get_worker_count(fetch_all: bool =False) -> int | None:
+async def get_worker_count(fetch_all: bool = False) -> int | None:
     try:
         """
         Fetch active worker count from docker API.
@@ -23,11 +23,15 @@ async def get_worker_count(fetch_all: bool =False) -> int | None:
             fetch_all - Returns all containers including the dead / finished ones.
         """
         runtime = RUNTIME_REGISTRY[shared_config.CONTAINER_RUNTIME]()
-    
+
         metadata = RuntimeMetadata(**shared_config.CONTAINER_METADATA, expires_at=None)
-        count_managed_containers = await runtime.list_managed_containers(metadata, count=True, all=fetch_all)
+        count_managed_containers = await runtime.list_managed_containers(
+            metadata, count=True, all=fetch_all
+        )
         if not isinstance(count_managed_containers, int):
-            raise ValueError(f"The value of count_managed_containers is invalid. {count_managed_containers=}")
+            raise ValueError(
+                f"The value of count_managed_containers is invalid. {count_managed_containers=}"
+            )
 
         return count_managed_containers
 
@@ -35,12 +39,16 @@ async def get_worker_count(fetch_all: bool =False) -> int | None:
         raise
 
     except ContainerAdapterAPIError as e:
-        await dispatch_event(LogEvent(
-            diag_code = "VC-IN-UNEXPECTED_INTERNAL_ERROR", severity="critical",
-            internal_log="Unexpected error occured while getting container count (Exception)",
-            summary= e.error_title,
-            exception_name=str(type(e).__name__), source = "scheduler"
-        ))
+        await dispatch_event(
+            LogEvent(
+                diag_code="VC-IN-UNEXPECTED_INTERNAL_ERROR",
+                severity="critical",
+                internal_log="Unexpected error occured while getting container count (Exception)",
+                summary=e.error_title,
+                exception_name=str(type(e).__name__),
+                source="scheduler",
+            )
+        )
 
 
 async def launch_workers(job_uuids: list[str]) -> None:
@@ -52,7 +60,9 @@ async def launch_workers(job_uuids: list[str]) -> None:
     _ = await asyncio.gather(*task_list)
 
 
-async def dispatch_queued_job(available_slots: int) -> Literal["queued", "started"] | None:
+async def dispatch_queued_job(
+    available_slots: int,
+) -> Literal["queued", "started"] | None:
     """
     Dispatch the number of jobs (available_slots) which are queued in SQLite DB.
     """

@@ -26,12 +26,14 @@ async def cancel_build_req(BCM: BuildCancelModel):
             if data and data.user_uuid == BCM.user_uuid:
                 success = True
 
-            await dispatch_event(event=InfoEvent(
-                job_uuid = f"{', '.join(BCM.job_uuids)}",
-                user_uuid = BCM.user_uuid,
-                diag_code = f"VC-I-CANCELLATION_{'SUCCESS' if success else 'FAILED'}",
-                summary = f"Cancellation of build(s) {'successful' if success else 'failed'}."
-            ))
+            await dispatch_event(
+                event=InfoEvent(
+                    job_uuid=f"{', '.join(BCM.job_uuids)}",
+                    user_uuid=BCM.user_uuid,
+                    diag_code=f"VC-I-CANCELLATION_{'SUCCESS' if success else 'FAILED'}",
+                    summary=f"Cancellation of build(s) {'successful' if success else 'failed'}.",
+                )
+            )
 
         await terminate_workers(job_uuids=BCM.job_uuids)
 

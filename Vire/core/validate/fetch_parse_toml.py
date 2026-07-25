@@ -30,7 +30,10 @@ async def fetch_and_parse_toml(VC: ValidatorContext) -> ParsedTOMLObject | None:
 
     try:
         vire_toml_str = await fetch_vire_toml(
-            provider=VC.provider, remote_user=VC.remote_user, remote_reponame=VC.remote_reponame, branch=VC.branch
+            provider=VC.provider,
+            remote_user=VC.remote_user,
+            remote_reponame=VC.remote_reponame,
+            branch=VC.branch,
         )
 
         try:
@@ -45,7 +48,7 @@ async def fetch_and_parse_toml(VC: ValidatorContext) -> ParsedTOMLObject | None:
         errors.InvalidBranchError,
         validation_errors.InvalidVireTomlError,
         errors.RepoFileFetchError,
-        errors.UnsupportedGitProviderError
+        errors.UnsupportedGitProviderError,
     ) as e:
         await dispatch_event(
             event=ErrorEvent(job_uuid=VC.job_uuid, user_uuid=VC.user_uuid, error=e),
@@ -55,5 +58,5 @@ async def fetch_and_parse_toml(VC: ValidatorContext) -> ParsedTOMLObject | None:
                 "Provider": VC.provider.capitalize(),
                 "Branch Name": VC.branch,
                 "Fetched from": f"Root Directory of {VC.branch}, {VC.remote_reponame}",
-            }
+            },
         )

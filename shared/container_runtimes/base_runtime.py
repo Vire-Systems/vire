@@ -9,7 +9,9 @@ class ContainerRuntime:
     def get_client(self):
         raise NotImplementedError
 
-    def create(self, job_uuid: str, image: str, cmd: list[str], metadata: RuntimeMetadata) -> None:
+    def create(
+        self, job_uuid: str, image: str, cmd: list[str], metadata: RuntimeMetadata
+    ) -> None:
         """
         Run a container synchronously.
         Intended to be used by the worker package.
@@ -50,7 +52,9 @@ class ContainerRuntime:
         """
         raise NotImplementedError
 
-    def stream_file(self, job_uuid: str, output_path: str, path_to_archive: str) -> None:
+    def stream_file(
+        self, job_uuid: str, output_path: str, path_to_archive: str
+    ) -> None:
         """
         Stream the finished artifacts as an archive.
 
@@ -110,14 +114,16 @@ class ContainerRuntime:
 
         raise NotImplementedError
 
-    async def list_expired_containers(self, metadata: RuntimeMetadata) -> AsyncGenerator[str, None]:
+    async def list_expired_containers(
+        self, metadata: RuntimeMetadata
+    ) -> AsyncGenerator[str, None]:
         """
         Yields the name (aka job_uuid) of containers that have expired.
         Intended to be used by the GC or somewhere where expired containers' names are needed.
 
         # NOTE:
             Do NOT expose Exception messages to users. It is STRICTLY INTERNAL.
-        
+
         Raises:
         ------
 

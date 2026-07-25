@@ -2,14 +2,17 @@
 
 import asyncio
 
-from BuildScheduler.Scheduler.core.dispatch_from_queue import dispatch_queued_job, get_worker_count
+from BuildScheduler.Scheduler.core.dispatch_from_queue import (
+    dispatch_queued_job,
+    get_worker_count,
+)
 from BuildScheduler.Scheduler.db.sqlite_orm.crud import read
 from BuildScheduler.Scheduler.utils.state import scheduler_config
 from shared.event_handling.handler import dispatch_event
 from shared.events.events import LogEvent
 
 
-async def scheduler_iteration(worker_count: int | None)-> None:
+async def scheduler_iteration(worker_count: int | None) -> None:
     if worker_count is None:
         raise ValueError("worker count is None")
     available_slots = scheduler_config.MAX_BUILDS_NUMBER - worker_count
@@ -26,10 +29,14 @@ async def scheduler_loop():
             await asyncio.sleep(30)
 
     except Exception as e:
-        await dispatch_event(LogEvent(
-            diag_code= "VC-IN-UNEXPECTED_INTERNAL_ERROR", severity="critical",
-            internal_log=str(e),
-            summary= ". Unexpected Exception.",
-            exception_name=str(type(e).__name__), source = "scheduler"
-        ))
+        await dispatch_event(
+            LogEvent(
+                diag_code="VC-IN-UNEXPECTED_INTERNAL_ERROR",
+                severity="critical",
+                internal_log=str(e),
+                summary=". Unexpected Exception.",
+                exception_name=str(type(e).__name__),
+                source="scheduler",
+            )
+        )
         pass

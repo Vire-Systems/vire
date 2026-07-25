@@ -17,7 +17,7 @@ while True:
     try:
         # Read available blocks
         response = r.xread({stream: last_id}, count=100, block=1000)
-        
+
         if not response:
             time.sleep(1)
             continue
@@ -26,11 +26,15 @@ while True:
             for msg_id, data in messages:
                 # Handle potential raw byte keys/values from redis
                 payload = data.get(b"payload" if b"payload" in data else "payload")
-                
+
                 if payload:
-                    log_line = payload.decode("utf-8") if isinstance(payload, bytes) else payload
+                    log_line = (
+                        payload.decode("utf-8")
+                        if isinstance(payload, bytes)
+                        else payload
+                    )
                     print(log_line, flush=True)  # Or forward it where it needs to go
-                
+
                 last_id = msg_id  # Advance offset to avoid duplicate reads
 
     except asyncio.CancelledError:

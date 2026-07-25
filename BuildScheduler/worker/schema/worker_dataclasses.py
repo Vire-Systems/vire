@@ -9,16 +9,20 @@ Consists -
 
 from dataclasses import dataclass, fields
 
+
 @dataclass(frozen=True, slots=True)
 class FrameworkAdapter:
     """Dataclass for framework data."""
+
     image: str
-    install_command: dict[str,str]
-    build_command: dict[str,str]
+    install_command: dict[str, str]
+    build_command: dict[str, str]
+
 
 @dataclass(frozen=True, slots=True)
 class WorkerContext:
     """Context required for worker"""
+
     job_uuid: str
     user_uuid: str
     remote: str
@@ -28,6 +32,7 @@ class WorkerContext:
     install_req: bool
     OUTPUT_DIR: str
     COMMIT_ID: str
+
 
 @dataclass(slots=True)
 class WorkerConfig:

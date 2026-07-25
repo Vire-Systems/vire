@@ -371,7 +371,7 @@ class TestUpdateJobStatus:
 
         with crud_session_patch(session_factory):
             await update_job_status(
-                job_uuid=job_uuid, status_msg="crashed", error_code="VC-SC-001"
+                job_uuid=job_uuid, status_msg="crashed", error_code="VC-IN-UNEXPECTED_INTERNAL_ERROR"
             )
 
         async with session_factory() as session:
@@ -381,7 +381,7 @@ class TestUpdateJobStatus:
             row = result.scalar_one_or_none()
 
         assert row.status == "crashed"
-        assert row.error == "VC-SC-001"
+        assert row.error == "VC-IN-UNEXPECTED_INTERNAL_ERROR"
 
     @pytest.mark.asyncio
     async def test_nonexistent_job_raises_no_job_state_error(

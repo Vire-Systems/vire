@@ -10,10 +10,11 @@ from Vire.project_manifest.schema_check import check_toml_schema
 from shared.errors.validation_errors import InvalidVireTomlError
 from Vire.objects.validation_models import ParsedTOMLObject
 
-async def parse_toml(toml_string: str)-> ParsedTOMLObject:
+
+async def parse_toml(toml_string: str) -> ParsedTOMLObject:
     """
     Parses vire.toml from toml string.
-    
+
     Args -
         toml_string - string returned from reading the repo's vire.toml.
 
@@ -22,7 +23,7 @@ async def parse_toml(toml_string: str)-> ParsedTOMLObject:
 
     Raises:
         'InvalidVireTomlError' if 'check_toml_schema' raises InvalidVireTomlError
-    
+
     Catches:
         InvalidVireTomlError and reraises it.
     """

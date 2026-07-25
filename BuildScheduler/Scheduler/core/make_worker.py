@@ -15,19 +15,23 @@ async def scheduler_create_worker(job_uuid: str) -> None:
         job_data = await read.fetch_build_data(job_uuid)
         if not job_data:
             raise NoJobStateError()
-        await dispatch_event(event=LogEvent(
-            job_uuid=job_uuid,
-            diag_code = "VC-I-WORKER_STARTED",
-            severity="info",
-            summary="A worker process started.",
-            source = "scheduler",
-            exception_name=None,
-            internal_log=None,
-        ))
+        await dispatch_event(
+            event=LogEvent(
+                job_uuid=job_uuid,
+                diag_code="VC-I-WORKER_STARTED",
+                severity="info",
+                summary="A worker process started.",
+                source="scheduler",
+                exception_name=None,
+                internal_log=None,
+            )
+        )
         await create_worker_process(job_data)
 
     except NoJobStateError as e:
-        await update.update_job_status(job_uuid, status_msg="failed", error_code=e.error_code)
+        await update.update_job_status(
+            job_uuid, status_msg="failed", error_code=e.error_code
+        )
         await dispatch_event(
             event=LogEvent(
                 job_uuid=job_uuid,
@@ -52,4 +56,6 @@ async def scheduler_create_worker(job_uuid: str) -> None:
                 internal_log=None,
             )
         )
-        await update.update_job_status(job_uuid, status_msg="crashed", error_code="VC-SC=001")
+        await update.update_job_status(
+            job_uuid, status_msg="crashed", error_code="VC-SC=001"
+        )

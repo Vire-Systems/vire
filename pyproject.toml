@@ -21,11 +21,15 @@ dependencies = [
     "httpx==0.28.1",
 ]
 
+
 [project.optional-dependencies]
+optional = [
+    "ruff",
+]
 dev = [
     "pytest",
     "pytest-asyncio==1.4.0",
-    "pytest-cov==7.1.0"
+    "pytest-cov==7.1.0",
 ]
 
 [tool.basedpyright]

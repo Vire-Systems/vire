@@ -14,7 +14,9 @@ from shared.errors.worker_errors import CredentialError
 
 def load_parser():
     """argparse terminal argument parser."""
-    parser = argparse.ArgumentParser(description="An isolated,individual worker process handling builds.")
+    parser = argparse.ArgumentParser(
+        description="An isolated,individual worker process handling builds."
+    )
 
     _ = parser.add_argument(
         "--json_struct",
@@ -40,15 +42,15 @@ def load_parser():
     # Variables updation.
     try:
         state = WorkerContext(
-            job_uuid = json_struct["job_uuid"],
-            user_uuid = json_struct["user_uuid"],
-            remote = json_struct["remote"],
-            repo_name = json_struct["repo_name"],
-            framework = json_struct["framework"],
-            package_manager = json_struct["pm"],
-            install_req = json_struct["install_req"],
-            OUTPUT_DIR = json_struct["output_dir"],
-            COMMIT_ID = json_struct["commit_id"],
+            job_uuid=json_struct["job_uuid"],
+            user_uuid=json_struct["user_uuid"],
+            remote=json_struct["remote"],
+            repo_name=json_struct["repo_name"],
+            framework=json_struct["framework"],
+            package_manager=json_struct["pm"],
+            install_req=json_struct["install_req"],
+            OUTPUT_DIR=json_struct["output_dir"],
+            COMMIT_ID=json_struct["commit_id"],
         )
         return state
     except KeyError as exc:

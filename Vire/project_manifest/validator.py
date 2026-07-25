@@ -34,7 +34,14 @@ async def validate_package_json(package_json_str: str) -> bool:
     """
     try:
         package_json = json.loads(package_json_str)
-        blocked_keys = {"start", "preinstall", "postinstall", "install", "prepare", "prepublish"}
+        blocked_keys = {
+            "start",
+            "preinstall",
+            "postinstall",
+            "install",
+            "prepare",
+            "prepublish",
+        }
         scripts = package_json.get("scripts", {})
         found_keys = [key for key in blocked_keys if key in scripts]
 
@@ -48,14 +55,16 @@ async def validate_package_json(package_json_str: str) -> bool:
         raise
     except Exception as e:
         raise validation_errors.InvalidPackageJsonError(
-            error_title= "Encountered unexpected errors while attempting to parse package.json. Internal Error",
+            error_title="Encountered unexpected errors while attempting to parse package.json. Internal Error",
             error_code="VC-IN-UNEXPECTED_INTERNAL_ERROR",
-            severity="critical"
+            severity="critical",
         ) from e
 
 
 # TOML
-async def validate_toml(lockfile_name: str | None, package_manager: str, output_dir: str, framework: str) -> None:
+async def validate_toml(
+    lockfile_name: str | None, package_manager: str, output_dir: str, framework: str
+) -> None:
     """
     Validates the vire.toml file.
 

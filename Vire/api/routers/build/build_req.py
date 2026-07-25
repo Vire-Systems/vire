@@ -16,13 +16,17 @@ from Vire.models.pydantic_classes import BuildRequestModel
 router = APIRouter()
 
 
-@router.post(path="/build/build_request", response_model=BuildReqResponse, operation_id="process_build_request")
+@router.post(
+    path="/build/build_request",
+    response_model=BuildReqResponse,
+    operation_id="process_build_request",
+)
 async def process_build_request(build_request_model: BuildRequestModel):
     """Processes build requests from Middleware microservice."""
     brm = build_request_model  # I can't type BuildRequestModel everytime, so this.
     try:
         result: bool = await register_build(brm)
-        status = 'PASSED' if result else 'FAILED'
+        status = "PASSED" if result else "FAILED"
         info_line = f"Data validation {status.lower()}."
         status_code = f"VC-I-VALIDATION_{status}"
 
@@ -31,26 +35,31 @@ async def process_build_request(build_request_model: BuildRequestModel):
                 job_uuid=brm.job_uuid,
                 user_uuid=brm.user_uuid,
                 diag_code=status_code,
-                summary=info_line
+                summary=info_line,
             ),
             job_details={
                 "Job UUID": brm.job_uuid,
                 "Git Provider": brm.provider.capitalize(),
                 "Commit SHA": brm.commit_id,
                 f"{brm.provider.capitalize()} Username": brm.remote_user,
-                f"{brm.provider.capitalize()} Repository": brm.remote_reponame
-            }
+                f"{brm.provider.capitalize()} Repository": brm.remote_reponame,
+            },
         )
 
-        return BuildReqResponse(success=result, reason=f"server {'accepted' if result else 'refused'} the request.")
+        return BuildReqResponse(
+            success=result,
+            reason=f"server {'accepted' if result else 'refused'} the request.",
+        )
     except Exception as e:
-        await dispatch_event(event=LogEvent(
-            user_uuid=build_request_model.user_uuid,
-            job_uuid=build_request_model.job_uuid,
-            diag_code="VC-IN-UNEXPECTED_INTERNAL_ERROR",
-            severity="critical",
-            summary="Build Request endpoint raised an unexpected error.",
-            source="Vire",
-            exception_name = type(e).__name__,
-            internal_log=None
-        ))
+        await dispatch_event(
+            event=LogEvent(
+                user_uuid=build_request_model.user_uuid,
+                job_uuid=build_request_model.job_uuid,
+                diag_code="VC-IN-UNEXPECTED_INTERNAL_ERROR",
+                severity="critical",
+                summary="Build Request endpoint raised an unexpected error.",
+                source="Vire",
+                exception_name=type(e).__name__,
+                internal_log=None,
+            )
+        )

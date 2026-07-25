@@ -4,19 +4,14 @@
 
 from BuildScheduler.worker.schema.worker_dataclasses import FrameworkAdapter
 
-#Vite
+# Vite
 vite = FrameworkAdapter(
     image="vire-runner:node22",
     install_command={
-        "npm":"npm ci --ignore-scripts",
-        "pnpm":"pnpm install --frozen-lockfile --ignore-scripts"
+        "npm": "npm ci --ignore-scripts",
+        "pnpm": "pnpm install --frozen-lockfile --ignore-scripts",
     },
-    build_command={
-        "npm":"npm run build",
-        "pnpm":"pnpm run build"
-    },
+    build_command={"npm": "npm run build", "pnpm": "pnpm run build"},
 )
 
-FRAMEWORK_REGISTRY = {
-    "vite":vite
-}
+FRAMEWORK_REGISTRY = {"vite": vite}

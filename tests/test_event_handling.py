@@ -371,7 +371,7 @@ class TestGetContext:
 
         evt = LogEvent(
             job_uuid=job_uuid,
-            diag_code="VC-SC-001",
+            diag_code="VC-IN-UNEXPECTED_INTERNAL_ERROR",
             severity="critical",
             summary="Something went wrong",
             source="scheduler",
@@ -380,7 +380,7 @@ class TestGetContext:
         )
         ctx = get_context(event=evt, job_details=None)
 
-        assert ctx.diag_code == "VC-SC-001"
+        assert ctx.diag_code == "VC-IN-UNEXPECTED_INTERNAL_ERROR"
         assert ctx.severity == "critical"
         assert ctx.summary == "Something went wrong"
         assert ctx.job_uuid == job_uuid

@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from shared.utils.types import Severity
 from shared.events.base_event import VireBaseEvent
 
+
 @dataclass(slots=True, kw_only=True)
 class GCReapEvent(VireBaseEvent):
     event: str = "ContainerReaped"
@@ -30,8 +31,9 @@ class ContainerTimeoutEvent(VireBaseEvent):
 @dataclass(slots=True, kw_only=True)
 class InfoEvent(VireBaseEvent):
     """
-    This event is for 
+    This event is for
     """
+
     event: str = "InfoEvent"
     severity: Severity = "info"
 
@@ -50,7 +52,6 @@ class InfoEvent(VireBaseEvent):
 
 @dataclass(slots=True, kw_only=True)
 class LogEvent(VireBaseEvent):
-    
     """
     This event is a special child instance of BaseEvent.
     Use this to send log events to the handler.
@@ -63,22 +64,22 @@ class LogEvent(VireBaseEvent):
     ---
     exception_name, source, internal_log
     """
+
     job_uuid: str = "SYSTEM"
     user_uuid: str = "SYSTEM"
     event: str = "Log Event"
-    
+
     source: str
     exception_name: str | None
     internal_log: str | None
 
-    write_log:bool = True
+    write_log: bool = True
     propagate_state: bool = False
-    
 
     def get_log_extras(self) -> dict[str, str]:
         log_extras = {
             "exception_name": str(self.exception_name),
             "source": self.source,
         }
-        log_extras.update({"reason":self.internal_log} if self.internal_log else {})
+        log_extras.update({"reason": self.internal_log} if self.internal_log else {})
         return log_extras

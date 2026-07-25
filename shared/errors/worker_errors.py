@@ -10,6 +10,8 @@ from shared.utils.types import Severity
 class CredentialError(VireBaseError):
     """Exception used for Credential errors by worker."""
 
-    error_title: str = "Credentials for worker creation do not exist / Were not supplied"
+    error_title: str = (
+        "Credentials for worker creation do not exist / Were not supplied"
+    )
     error_code: str = "VC-IN-001"
     severity: Severity = "critical"
