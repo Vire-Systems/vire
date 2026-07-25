@@ -47,7 +47,7 @@ ignore = [
 ]
 
 venvPath = "."
-venv = "venv"
+venv = ".venv"
 
 
 [tool.ruff]
