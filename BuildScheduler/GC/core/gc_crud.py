@@ -1,7 +1,8 @@
 import aiosqlite
 from BuildScheduler.GC.utils.state import gc_config
 
-async def get_user_uuid(job_uuid: str)-> str | None:
+
+async def get_user_uuid(job_uuid: str) -> str | None:
     async with aiosqlite.connect(gc_config.DB_PATH) as db:
         query = "SELECT user_uuid FROM BuildState WHERE job_uuid=?"
         _ = await db.execute("PRAGMA journal_mode=WAL")
@@ -13,19 +14,18 @@ async def get_user_uuid(job_uuid: str)-> str | None:
             return None
         return user_uuid[0]
 
+
 async def update_job_status(
-    job_uuids: list[str],
-    status: str ="terminated",
-    error_code: str | None = None
-)-> None:
+    job_uuids: list[str], status: str = "terminated", error_code: str | None = None
+) -> None:
     async with aiosqlite.connect(gc_config.DB_PATH) as db:
-        placeholders = ','.join('?' for _ in job_uuids)
+        placeholders = ",".join("?" for _ in job_uuids)
 
         # Pragmas
         _ = await db.execute("PRAGMA journal_mode=WAL")
         _ = await db.execute("PRAGMA busy_timeout=5000")
 
-        #Main logic
+        # Main logic
         if not error_code:
             query = f"UPDATE BuildState SET status=? WHERE job_uuid IN ({placeholders})"
             _ = await db.execute(query, (status, *job_uuids))

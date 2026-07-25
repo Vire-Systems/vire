@@ -13,7 +13,10 @@ _ = load_dotenv("/home/vire/vire/.env")
 from BuildScheduler.worker.cli_parser import load_parser
 from BuildScheduler.worker.core.cleanup_container import remove_container
 from BuildScheduler.worker.core.create_container_job import container_create
-from BuildScheduler.worker.resolve_worker_state import fetch_job_status, update_job_state
+from BuildScheduler.worker.resolve_worker_state import (
+    fetch_job_status,
+    update_job_state,
+)
 from BuildScheduler.worker.schema.worker_dataclasses import WorkerContext
 from BuildScheduler.worker.utils.state import worker_config
 
@@ -45,9 +48,13 @@ async def stream_file(WC: WorkerContext):
             return
 
         output_path = os.path.join("/workspace", f"{WC.repo_name}", WC.OUTPUT_DIR)
-        path_to_tar = os.path.join(worker_config.WORKER_OUTPUT_DIR, f"{WC.job_uuid}.tar")
+        path_to_tar = os.path.join(
+            worker_config.WORKER_OUTPUT_DIR, f"{WC.job_uuid}.tar"
+        )
 
-        runtime.stream_file(job_uuid=WC.job_uuid, output_path=output_path, path_to_archive=path_to_tar)
+        runtime.stream_file(
+            job_uuid=WC.job_uuid, output_path=output_path, path_to_archive=path_to_tar
+        )
 
     except OutputDirNotFound as e:
         status = fetch_job_status(job_uuid=WC.job_uuid, user_uuid=WC.user_uuid)
@@ -85,23 +92,29 @@ async def main(worker_context: WorkerContext):
         await complete_final_tasks(worker_context=worker_context)
 
     except Exception as e:
-        await dispatch_event(event=LogEvent(
-            user_uuid=worker_context.user_uuid,
-            job_uuid=worker_context.job_uuid,
-            diag_code="VC-IN-UNEXPECTED_INTERNAL_ERROR",
-            severity="critical",
-            summary="Unexpected issue while trying to create/end a worker process.",
-            source="worker",
-            exception_name=type(e).__name__,
-            internal_log=None, propagate_state=True
-        ))
+        await dispatch_event(
+            event=LogEvent(
+                user_uuid=worker_context.user_uuid,
+                job_uuid=worker_context.job_uuid,
+                diag_code="VC-IN-UNEXPECTED_INTERNAL_ERROR",
+                severity="critical",
+                summary="Unexpected issue while trying to create/end a worker process.",
+                source="worker",
+                exception_name=type(e).__name__,
+                internal_log=None,
+                propagate_state=True,
+            )
+        )
         update_job_state(job_uuid, prev_status="running", status="crashed")
+
 
 def init() -> WorkerContext:
     worker_context = load_parser()
     try:
         logfile_location = setup_logfile_location(worker_context.job_uuid)
-        logging.basicConfig(filename=logfile_location, encoding="utf-8", level=logging.INFO)
+        logging.basicConfig(
+            filename=logfile_location, encoding="utf-8", level=logging.INFO
+        )
 
         return worker_context
 

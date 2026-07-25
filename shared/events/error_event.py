@@ -5,6 +5,7 @@ from shared.errors.base_error import VireBaseError
 from shared.events.base_event import VireBaseEvent
 from shared.utils.types import Severity
 
+
 @dataclass(slots=True, kw_only=True)
 class ErrorEvent(VireBaseEvent):
     """
@@ -15,6 +16,7 @@ class ErrorEvent(VireBaseEvent):
 
     Refer to BaseError's docstring for all details.
     """
+
     error: VireBaseError
     diag_code: str = field(init=False)
     summary: str = field(init=False)
@@ -33,5 +35,5 @@ class ErrorEvent(VireBaseEvent):
         return {
             "possible_causes": self.error.possible_causes,
             "possible_fixes": self.error.possible_fixes,
-            "notes": self.error.notes
+            "notes": self.error.notes,
         }

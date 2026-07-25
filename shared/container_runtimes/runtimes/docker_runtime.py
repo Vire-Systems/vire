@@ -38,10 +38,11 @@ class DockerRuntime(ContainerRuntime):
         """Return the docker client."""
         return self.client
 
-
     # Container creation ---
     @override
-    def create(self, job_uuid: str, image: str, cmd: list[str], metadata: RuntimeMetadata) -> None:
+    def create(
+        self, job_uuid: str, image: str, cmd: list[str], metadata: RuntimeMetadata
+    ) -> None:
         """
         Run a docker container synchronously.
         Intended to be used by the worker package.
@@ -57,7 +58,10 @@ class DockerRuntime(ContainerRuntime):
             if metadata.expires_at is None:
                 raise ValueError("expires_at is required for container creation.")
 
-            labels = {"managed_by": metadata.managed_by, "expires_at": str(metadata.expires_at)}
+            labels = {
+                "managed_by": metadata.managed_by,
+                "expires_at": str(metadata.expires_at),
+            }
             _ = client.containers.run(
                 name=job_uuid,
                 image=image,
@@ -72,10 +76,13 @@ class DockerRuntime(ContainerRuntime):
         except ValueError:
             raise
         except APIError as e:
-            raise ContainerCreationFail(error_title="Container creation failed. Docker raised APIError.") from e
+            raise ContainerCreationFail(
+                error_title="Container creation failed. Docker raised APIError."
+            ) from e
         except Exception as e:
-            raise ContainerCreationFail(error_title=f"Container spin up unsuccessful. Details: {e}") from e
-
+            raise ContainerCreationFail(
+                error_title=f"Container spin up unsuccessful. Details: {e}"
+            ) from e
 
     # Remove container ----
     @override
@@ -98,12 +105,15 @@ class DockerRuntime(ContainerRuntime):
             raise ContainerAdapterAPIError(error_title="Docker API Error.") from e
 
         except Exception as e:
-            raise ContainerAdapterAPIError(error_title="Unexpected error occured while removing the container") from e
-
+            raise ContainerAdapterAPIError(
+                error_title="Unexpected error occured while removing the container"
+            ) from e
 
     # Extract artifacts ----
     @override
-    def stream_file(self, job_uuid: str, output_path: str, path_to_archive: str) -> None:
+    def stream_file(
+        self, job_uuid: str, output_path: str, path_to_archive: str
+    ) -> None:
         """Stream the file content inside the docker container as an archive (tar file)."""
 
         try:
@@ -119,7 +129,6 @@ class DockerRuntime(ContainerRuntime):
                 error_title="The output directory given in vire.toml does not exist in the container."
             ) from e
 
-
     # Fetch log lines from container ----
     @override
     def get_container_log(self, job_uuid: str) -> Generator[bytes, None, None]:
@@ -128,7 +137,9 @@ class DockerRuntime(ContainerRuntime):
             client = self.get_client()
             container_obj = client.containers.get(job_uuid)
 
-            for line in container_obj.logs(stream=True, follow=True, stdout=True, stderr=True, timestamps=True):
+            for line in container_obj.logs(
+                stream=True, follow=True, stdout=True, stderr=True, timestamps=True
+            ):
                 yield line
 
         except Exception as e:
@@ -177,11 +188,15 @@ class DockerRuntime(ContainerRuntime):
 
             return return_async_generator()
         except Exception as e:
-            raise ContainerAdapterAPIError(error_title="unable to get Scheduler managed containers.") from e
+            raise ContainerAdapterAPIError(
+                error_title="unable to get Scheduler managed containers."
+            ) from e
 
     # List containers that have expired
     @override
-    async def list_expired_containers(self, metadata: RuntimeMetadata) -> AsyncGenerator[str, None]:
+    async def list_expired_containers(
+        self, metadata: RuntimeMetadata
+    ) -> AsyncGenerator[str, None]:
         """
         Yield the job_uuids (aka names) of expired containers.
 
@@ -206,10 +221,15 @@ class DockerRuntime(ContainerRuntime):
             )
 
             for container_obj in raw_container_list:
-                if int(container_obj.labels.get("expires_at", now_time)) <= now_time - 15:
+                if (
+                    int(container_obj.labels.get("expires_at", now_time))
+                    <= now_time - 15
+                ):
                     if container_obj.name is None:
                         continue
                     yield container_obj.name
 
         except Exception as e:
-            raise ContainerAdapterAPIError(error_title="unable to get containers which are overdue.") from e
+            raise ContainerAdapterAPIError(
+                error_title="unable to get containers which are overdue."
+            ) from e

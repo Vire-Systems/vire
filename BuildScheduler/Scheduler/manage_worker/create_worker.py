@@ -53,8 +53,12 @@ async def create_worker_process(WCP: WorkerCreationParams) -> None:
             raise
 
         try:
-            process = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            await update.update_job_status(job_uuid=WCP.job_uuid, status_msg="running", PID=process.pid)
+            process = subprocess.Popen(
+                cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+            )
+            await update.update_job_status(
+                job_uuid=WCP.job_uuid, status_msg="running", PID=process.pid
+            )
             await delayed_delete(job_uuid=WCP.job_uuid, user_uuid=WCP.user_uuid)
 
         except NoJobStateError as e:
@@ -70,7 +74,9 @@ async def create_worker_process(WCP: WorkerCreationParams) -> None:
                     internal_log=e.error_title,
                 )
             )
-            await update.update_job_status(job_uuid=WCP.job_uuid, status_msg="crashed", error_code=e.error_code)
+            await update.update_job_status(
+                job_uuid=WCP.job_uuid, status_msg="crashed", error_code=e.error_code
+            )
 
         except Exception as e:
             await dispatch_event(
@@ -86,7 +92,9 @@ async def create_worker_process(WCP: WorkerCreationParams) -> None:
                 )
             )
             await update.update_job_status(
-                job_uuid=WCP.job_uuid, status_msg="crashed", error_code="VC-IN-UNEXPECTED_INTERNAL_ERROR"
+                job_uuid=WCP.job_uuid,
+                status_msg="crashed",
+                error_code="VC-IN-UNEXPECTED_INTERNAL_ERROR",
             )
             return
 

@@ -38,8 +38,9 @@ def fetch_job_status(job_uuid: str, user_uuid: str) -> str:
             SELECT status FROM BuildState
             WHERE job_uuid=? AND user_uuid=?
             """
-        result: tuple[str] = cursor.execute(query, (job_uuid, user_uuid)).fetchone() # pyright: ignore[reportAny]
+        result: tuple[str] = cursor.execute(query, (job_uuid, user_uuid)).fetchone()  # pyright: ignore[reportAny]
         return result[0]
+
 
 def update_job_state(
     job_uuid: str,

@@ -30,7 +30,9 @@ async def register_build(BRM: BuildRequestModel) -> bool:
             return False
 
         await create.register_build_data(BRM, validated_toml)
-        await create.register_build_state(job_uuid=BRM.job_uuid, user_uuid=BRM.user_uuid, status="queued")
+        await create.register_build_state(
+            job_uuid=BRM.job_uuid, user_uuid=BRM.user_uuid, status="queued"
+        )
         await register_job_with_redis(BRM, "passed")
         return True
 
@@ -47,8 +49,8 @@ async def register_build(BRM: BuildRequestModel) -> bool:
                 internal_log="Queueing the build failed due to failure in registering with the SQLite DB.",
             ),
             job_details={
-                "Commit SHA":BRM.commit_id,
-                "Repository name": BRM.remote_reponame
-            }
+                "Commit SHA": BRM.commit_id,
+                "Repository name": BRM.remote_reponame,
+            },
         )
         return False

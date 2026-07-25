@@ -1,7 +1,7 @@
 """
 This module handles all the custom db exceptions used in crud.py.
 
-Contains - 
+Contains -
     1. NoJobStateError
 """
 
@@ -14,7 +14,8 @@ from shared.utils.types import Severity
 @dataclass(slots=True, kw_only=True)
 class NoJobStateError(VireBaseError):
     """Raised when Job state doesn't exist in the db."""
-    error_title: str = "Job State for the job does not exist." 
+
+    error_title: str = "Job State for the job does not exist."
     error_code: str = "VC-IN-NO_JOB_STATE"
     severity: Severity = "critical"
 

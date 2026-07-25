@@ -56,7 +56,9 @@ def setup_creation(worker_context: WorkerContext) -> tuple[str, str]:
         base = f"{clone_and_cd} && {checkout}"
 
         if worker_context.install_req:
-            install_cmd = framework_adapter.install_command[worker_context.package_manager]
+            install_cmd = framework_adapter.install_command[
+                worker_context.package_manager
+            ]
             cmd_body = f"{base} && {install_cmd} && {build_cmd}"
         else:
             cmd_body = f"{base} && {build_cmd}"
@@ -81,33 +83,56 @@ async def container_create(worker_context: WorkerContext) -> None:
         image, cmd_body = setup_creation(worker_context=worker_context)
 
         if not image or not cmd_body:
-            raise ContainerCreationFail(error_title="Creation of the isolated environment failed.")
+            raise ContainerCreationFail(
+                error_title="Creation of the isolated environment failed."
+            )
         cmd = ["sh", "-c", cmd_body]
 
-        runtime_metadata = RuntimeMetadata(**shared_config.CONTAINER_METADATA, expires_at=str(expires_at))
+        runtime_metadata = RuntimeMetadata(
+            **shared_config.CONTAINER_METADATA, expires_at=str(expires_at)
+        )
 
         await asyncio.to_thread(
-            runtime.create, job_uuid=worker_context.job_uuid, image=image, cmd=cmd, metadata=runtime_metadata
+            runtime.create,
+            job_uuid=worker_context.job_uuid,
+            image=image,
+            cmd=cmd,
+            metadata=runtime_metadata,
         )
         container_log_generator = runtime.get_container_log(worker_context.job_uuid)
 
         for line in container_log_generator:
             str_line = line.decode("utf-8")
-            await publish_log_redis(str_line, user_uuid=worker_context.user_uuid, job_uuid=worker_context.job_uuid)
+            await publish_log_redis(
+                str_line,
+                user_uuid=worker_context.user_uuid,
+                job_uuid=worker_context.job_uuid,
+            )
 
     except ContainerCreationFail as e:
-        await dispatch_event(event=LogEvent(
-            user_uuid=worker_context.user_uuid, job_uuid=worker_context.job_uuid,
-            diag_code = "VC-IN-001", source="worker", severity="critical",
-            summary="Container creation failed. Internal Error.",
-            exception_name=type(e).__name__, propagate_state=True,
-            internal_log=e.error_title
-        ))
+        await dispatch_event(
+            event=LogEvent(
+                user_uuid=worker_context.user_uuid,
+                job_uuid=worker_context.job_uuid,
+                diag_code="VC-IN-001",
+                source="worker",
+                severity="critical",
+                summary="Container creation failed. Internal Error.",
+                exception_name=type(e).__name__,
+                propagate_state=True,
+                internal_log=e.error_title,
+            )
+        )
 
     except Exception as e:
-        await dispatch_event(event=LogEvent(
-            job_uuid=worker_context.job_uuid,diag_code="VC-IN-001", severity="critical",
-            summary = "Container creation was unsuccessful.",
-            exception_name=type(e).__name__, source="worker",
-            internal_log="Unexpected error (Exception) when creating the container."
-        ))
+        await dispatch_event(
+            event=LogEvent(
+                job_uuid=worker_context.job_uuid,
+                diag_code="VC-IN-001",
+                severity="critical",
+                summary="Container creation was unsuccessful.",
+                exception_name=type(e).__name__,
+                source="worker",
+                internal_log="Unexpected error (Exception) when creating the container.",
+            )
+        )

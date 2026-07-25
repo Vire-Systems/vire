@@ -41,7 +41,7 @@ async def check_toml_schema(toml_dict: dict) -> ParsedTOMLObject:
         if not project:
             raise InvalidVireTomlError(error_title="[project] table not found")
 
-        output_dir:str = project.get("output_dir")
+        output_dir: str = project.get("output_dir")
         framework_version: str = project.get("framework_version")
         dependencies_req: bool = project.get("dependencies")
 
@@ -57,7 +57,7 @@ async def check_toml_schema(toml_dict: dict) -> ParsedTOMLObject:
             output_str += "'dependencies' cannot be empty."
 
         if output_str:
-            raise InvalidVireTomlError(error_title = output_str)
+            raise InvalidVireTomlError(error_title=output_str)
 
         return ParsedTOMLObject(
             framework=framework,
@@ -69,16 +69,18 @@ async def check_toml_schema(toml_dict: dict) -> ParsedTOMLObject:
     except InvalidVireTomlError as e:
         raise e
     except Exception as e:
-        await dispatch_event(event=LogEvent(
-            diag_code= "VC-IN-UNEXPECTED_INTERNAL_ERROR",
-            severity="critical",
-            summary = "Unable to parse vire.toml of the user (raised Exception)",
-            source = "validation",
-            exception_name= type(e).__name__,
-            internal_log=None
-        ))
+        await dispatch_event(
+            event=LogEvent(
+                diag_code="VC-IN-UNEXPECTED_INTERNAL_ERROR",
+                severity="critical",
+                summary="Unable to parse vire.toml of the user (raised Exception)",
+                source="validation",
+                exception_name=type(e).__name__,
+                internal_log=None,
+            )
+        )
         raise InvalidVireTomlError(
             error_title="Internal error while parsing vire.toml.",
             error_code="VC-IN-UNEXPECTED_INTERNAL_ERROR",
-            severity="critical"
+            severity="critical",
         )

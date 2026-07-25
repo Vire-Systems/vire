@@ -12,10 +12,11 @@ os.makedirs(os.path.dirname(scheduler_config.SQLITE_DB_PATH), exist_ok=True)
 
 engine = create_async_engine(scheduler_config.DB_URL, echo=False)
 async_session = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
-Base = declarative_base() # pyright: ignore[reportAny]
+Base = declarative_base()  # pyright: ignore[reportAny]
+
 
 @event.listens_for(engine.sync_engine, "connect")
-def sqlite_conn_setup(db_api_connection, connection_record)-> None:
+def sqlite_conn_setup(db_api_connection, connection_record) -> None:
     cursor = db_api_connection.cursor()
 
     cursor.execute("PRAGMA journal_mode=WAL")

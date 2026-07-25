@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+
 @dataclass(frozen=True, slots=True)
 class GCConfig:
     LOGFILE_DIR: str

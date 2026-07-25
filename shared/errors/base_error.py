@@ -1,7 +1,8 @@
 from dataclasses import dataclass
 from typing import Literal
 
-@dataclass(slots= True, kw_only=True)
+
+@dataclass(slots=True, kw_only=True)
 class VireBaseError(Exception):
     """
     Base class for all Vire-specific exceptions.
@@ -33,8 +34,6 @@ class VireBaseError(Exception):
     possible_causes
     possible_fixes
     notes - suggestions to the user
-        
-        
     """
 
     error_title: str
@@ -50,9 +49,8 @@ class VireBaseError(Exception):
 
     # Optionals
     possible_causes: tuple[str, ...] | None = None
-    possible_fixes : tuple[str, ...] | None = None
+    possible_fixes: tuple[str, ...] | None = None
     notes: tuple[str, ...] | None = None
 
     def __post_init__(self):
         super().__init__(self.error_title)
-

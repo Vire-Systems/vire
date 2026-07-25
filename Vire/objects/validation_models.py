@@ -4,6 +4,7 @@ All dataclasses used in the validator.
 
 from dataclasses import dataclass
 
+
 @dataclass(frozen=True, slots=True)
 class ValidatorContext:
     """
@@ -12,6 +13,7 @@ class ValidatorContext:
     Attributes -
         job_uuid, user_uuid, provider, remote_user, remote_reponame, branch, commit_id
     """
+
     job_uuid: str
     user_uuid: str
     provider: str
@@ -27,23 +29,26 @@ class ParsedTOMLObject:
     """
     A dataclass with parsed toml data.
 
-    Attributes - 
+    Attributes -
         framework, package_manager, framework_version, output_dir, install_req
     """
+
     framework: str
     package_manager: str
     framework_version: str
     output_dir: str
     install_req: bool
 
+
 @dataclass(frozen=True, slots=True)
 class TOMLValidationParams:
     """
     A dataclass for the params of the function 'validate_vire_toml'.
 
-    Attributes - 
+    Attributes -
         lockfile_name, common_line, ts
     """
+
     lockfile_name: str | None
     common_line: str
     ts: str
@@ -55,10 +60,11 @@ class LockfileValidationParams:
     """
     A dataclass for the params of the function 'fetch_and_validate_lockfile'.
 
-    Attributes - 
+    Attributes -
         install_req, commit_id, package_manager, provider
     """
-    install_req : bool
+
+    install_req: bool
     commit_id: str
     package_manager: str
     provider: str
@@ -70,9 +76,10 @@ class PkgJSONValidationParams:
     """
     A dataclass for the params of the function 'fetch_and_validate_pkgjson'.
 
-    Attributes - 
+    Attributes -
         lockfile_name, common_line, ts
     """
+
     lockfile_name: str | None
     common_line: str
     ts: str

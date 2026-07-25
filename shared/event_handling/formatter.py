@@ -9,8 +9,9 @@ from json import dumps
 from shared.event_handling.handler_context import EventHandlerContext
 
 
-
-def format_internal_log(context: EventHandlerContext, extra_details: dict[str, str])-> str:
+def format_internal_log(
+    context: EventHandlerContext, extra_details: dict[str, str]
+) -> str:
     log_dict = {
         "event": context.event,
         "timestamp": str(context.timestamp),
@@ -35,10 +36,16 @@ def _format_report(
         return []
 
     if isinstance(data, Mapping):
-        return [ heading + ":", *(f"    {key}: {value}" for key, value in data.items()), ]
+        return [
+            heading + ":",
+            *(f"    {key}: {value}" for key, value in data.items()),
+        ]
 
     elif isinstance(data, Sequence):
-        return [ heading + ":", *(f"    - {item}" for item in data), ]
+        return [
+            heading + ":",
+            *(f"    - {item}" for item in data),
+        ]
 
 
 def format_user_report(context: EventHandlerContext) -> str:
@@ -54,13 +61,15 @@ def format_user_report(context: EventHandlerContext) -> str:
         "",
     ]
 
-    report.extend(_format_report(
-        "Job Details",
-        {
-            "Job UUID": context.job_uuid,
-            **(context.job_details or {}),
-        },
-    ))
+    report.extend(
+        _format_report(
+            "Job Details",
+            {
+                "Job UUID": context.job_uuid,
+                **(context.job_details or {}),
+            },
+        )
+    )
 
     for heading, data in (
         ("Possible Causes", context.possible_causes),
@@ -72,4 +81,3 @@ def format_user_report(context: EventHandlerContext) -> str:
             report.extend(["", *section])
 
     return "\n".join(report)
-

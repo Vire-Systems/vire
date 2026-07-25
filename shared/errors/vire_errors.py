@@ -5,6 +5,7 @@ from shared.utils.types import Severity
 
 # Note: The comments on top of each class is for separating the classes at a glance
 
+
 # Invalid branch --
 @dataclass(slots=True, kw_only=True)
 class InvalidBranchError(VireBaseError):
@@ -57,10 +58,9 @@ class NoLockfileError(VireBaseError):
 
     severity: Severity = "warn"
 
-
     possible_fixes: tuple[str, ...] | None = (
         "Try setting 'dependencies=false' in vire.toml if installation of packages isn't needed for building the project.",
-        "Try running `npm in`"
+        "Try running `npm in`",
     )
 
 
@@ -68,6 +68,7 @@ class NoLockfileError(VireBaseError):
 @dataclass(slots=True, kw_only=True)
 class UnsupportedGitProviderError(VireBaseError):
     """Raise when the git provider isn't supported."""
+
     error_code: str = "VC-VD-UNSUPPORTED_GIT_PROVIDER"
     error_title: str = "The git provider specified is not supported."
 
@@ -82,15 +83,16 @@ class UnsupportedGitProviderError(VireBaseError):
 @dataclass(slots=True, kw_only=True)
 class RepoFileFetchError(VireBaseError):
     """Raise when raw file fetch from client provided URL fails."""
+
     error_code: str = "VC-VD-FILE_FETCH_FAILED"
     error_title: str = "Error: VC-VD-014. Git provider API failed."
 
     severity: Severity = "critical"
 
     possible_causes: tuple[str, ...] | None = (
-    "Check {VC.provider.capitalize()}'s status",
-    "Could be caused by the package.json file being malformed.",
-    "Outdated Commit SHA because something was pushed right after the build started (1-3s delay between pushes.)",
+        "Check {VC.provider.capitalize()}'s status",
+        "Could be caused by the package.json file being malformed.",
+        "Outdated Commit SHA because something was pushed right after the build started (1-3s delay between pushes.)",
     )
 
     notes: tuple[str, ...] | None = (

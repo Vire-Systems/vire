@@ -17,7 +17,13 @@ lockfile_matrix: dict[str, str] = {
 
 package_managers_list: tuple[str, ...] = ("npm", "pnpm", "yarn", "bun")
 
-valid_lockfile_list = ("pnpm-lock.yaml", "yarn.lock", "bun.lock", "bun.lockb", "package-lock.json")
+valid_lockfile_list = (
+    "pnpm-lock.yaml",
+    "yarn.lock",
+    "bun.lock",
+    "bun.lockb",
+    "package-lock.json",
+)
 
 # Core instance identity. TODO: Change this to a public key / core uuid
 #

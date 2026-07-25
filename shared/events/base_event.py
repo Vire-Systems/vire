@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, UTC
 from shared.utils.types import Severity
 
+
 @dataclass(slots=True)
 class VireBaseEvent:
     """
@@ -42,7 +43,7 @@ class VireBaseEvent:
 
     timestamp : datetime
         UTC timestamp representing when the event was created.
-        """
+    """
 
     event: str
     job_uuid: str
@@ -54,10 +55,10 @@ class VireBaseEvent:
     # These are mostly for API enforcement so logging / propagation actually happens depending upon the event.
     write_log: bool
     propagate_state: bool
-    timestamp: datetime = field(default_factory= lambda: datetime.now(UTC))
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
 
-    def get_extra_content(self)-> dict[str, tuple[str, ...] | None]:
+    def get_extra_content(self) -> dict[str, tuple[str, ...] | None]:
         return {}
 
-    def get_log_extras(self)-> dict[str, str]:
+    def get_log_extras(self) -> dict[str, str]:
         return {}

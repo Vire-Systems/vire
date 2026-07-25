@@ -30,7 +30,9 @@ async def lifespan(app: FastAPI):
     finally:
         vire_logger("info", "[Vire Core] shutting down.")
         if not async_requests.client:
-            vire_logger("info", "[async req setup] No client found. Ignoring aclose()...")
+            vire_logger(
+                "info", "[async req setup] No client found. Ignoring aclose()..."
+            )
         else:
             await async_requests.client.aclose()
             vire_logger("info", "[async req setup] client pool closed.")

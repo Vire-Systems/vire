@@ -30,12 +30,16 @@ async def gc_core_loop():
                 await batch_remove()
 
             except Exception as e:
-                await dispatch_event(event=LogEvent(
-                    diag_code="VC-IN-001", severity="critical",
-                    internal_log="Unexpected error (Exception) when starting the GC loop.",
-                    summary="[GC] Unable to collect timed out builds.",
-                    exception_name=type(e).__name__, source = "gc"
-                ))
+                await dispatch_event(
+                    event=LogEvent(
+                        diag_code="VC-IN-001",
+                        severity="critical",
+                        internal_log="Unexpected error (Exception) when starting the GC loop.",
+                        summary="[GC] Unable to collect timed out builds.",
+                        exception_name=type(e).__name__,
+                        source="gc",
+                    )
+                )
 
             await asyncio.sleep(30)
 
