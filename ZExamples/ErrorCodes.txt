@@ -1,51 +1,60 @@
 This is a brief error code doc. Won't be high detail.
+Base the official docs on these error codes.
 
-FORMAT: [VIRE LAYER]-[SUBSYSTEM]-[ERROR NUMBER]
+FORMAT: [VIRE LAYER]-[SUBSYSTEM]-[ERROR]
 
-Examples:
-    [VIRE LAYER]
-        1. VC - Vire Core
-        [SUBSYSTEM]
-            1. SC - Scheduler
-            2. GC - Garbage Collector
-            3. WK - Worker
-            4. VD - Validation
+[VIRE LAYER]
+  |
+  ├ IN: Internal
+  |
+  ├- VC: Vire Core
+  |   |
+  |  [SUBSYSTEM]
+  |   |
+  |   ├- SC: Scheduler
+  |   ├- GC: Garbage Collector
+  |   ├- WK: Worker
+  |   └- VD: Validation
+  |
+  ├- VMW: Vire MiddleWare
+  |
+  └- VU: Vire Upload
 
-    2. VMW - Vire MiddleWare
-    3. VU - Vire Upload
+* VC-IN-UNEXPECTED_INTERNAL_ERROR - Broad except / Unexpected error
+
+* VC-IN-GIT_PROVIDER_API_FAILED:
+   - Failed to fetch files from Git provider's raw file CDN
+   - Provider's API sent a malformed git tree. 
+
+* VC-IN-002 - No image
+
+* VC-SC-NO_JOB_STATE - No job state. Job state for requested job uuid was not found.
+* VC-SC-CONTAINER_TIMED_OUT - Job terminated for exceeding the 5 minute limit.
 
 
-VC-SC-001 - General exception ('catch all' statement. Internal error)
-VC-SC-002 - No job Data. Job data for requested job_uuid returned none
-VC-SC-003 - No job state. Job state for requested job uuid was not found.
-VC-SC-004 - Worker process creation failed (Internal Error)
-VC-SC-005 - Job terminated for exceeding the 5 minute limit.
+* VC-VD-UNSUPPORTED_FRAMEWORK - Unsupported/Invalid framework error
 
-[vire.toml parsing errors]
-VC-VD-001 - Unsupported/Invalid framework error
-VC-VD-002 - Invalid branch error. The branch which was provided to VD does not exist
-VC-VD-003 - Invalid vire.toml structure / values
-VC-VD-004 - Failed to fetch files from Git provider's raw file CDN
-VC-VD-005 - Unsupported git provider (Internal parsing failure)
+* VC-VD-INVALID_BRANCH:
+   - Branch does not exist. It was either removed or parsed incorrectly.
+   - Invalid branch error. The branch which was provided to VD does not exist
 
-[Lockfile validation errors]
-VC-VD-011 - Git provider's git tree api returned a json object without git_tree.paths or "trees". (Very rare)
-VC-VD-012 - Empty lockfile
-VC-VD-013 - No lockfile
-VC-VD-014 - Fetching the files from Git provider (using git tree api / raw file CDN) failed.
-VC-VD-015 - Unsupported package manager
+* VC-VD-INVALID_VIRE_TOML - Invalid vire.toml structure / values
+* VC-VD-UNSUPPORTED_GIT_PROVIDER - Unsupported git provider (Internal parsing failure if provider in supported list)
 
-[vire.toml validation errors]
-VC-VD-021 - The same as VC-VD-001. Unsupported or invalid framework error.
-VC-VD-022 - The provided PM's lockfile does not match the one in user's repository.
-VC-VD-023 - Invalid output directory. Can only contain values from 0-9, a-z, A-Z, _ (underscores) and - (hyphens)
+* VC-VD-EMPTY_LOCKFILE - Empty lockfile. 
+* VC-VD-NO_LOCKFILE - No lockfile
+* VC-VD-UNSUPPORTED_PM:
+   - Unsupported package manager
+   - The provided PM's lockfile does not match the one in user's repository.
 
-[package.json validation]
-VC-VD-031 - Invalid package.json. Remove “preinstall”, “postinstall”, “install”, “prepare”, “prepublish” scripts if present.
-VC-VD-032 - Branch does not exist. It was either removed or parsed incorrectly.
-VC-VD-033 - Same as VC-VD-014. Fetching the files from Git provider raw file api failed.
-VC-VD-034 - Same as VC-VD-005. Unsupported git provider (internal parsing failure)
+* VC-VD-INVALID_OUTPUT_DIRECTORY:
+   - Invalid output directory. Can only contain values from 0-9, a-z, A-Z, _ (underscores) and - (hyphens)
 
-VC-GC-001 - Worker / Container process was collected by garbage collector for exceeding 5m 15s.
+* VC-VD-INVALID_PACKAGE_JSON:
+   - Invalid package.json. Remove “preinstall”, “postinstall”, “install”, “prepare”, “prepublish” scripts if present.
 
-VC-WK-001 - Broad catch / general internal failure 
+
+* CONTAINER_REAPED - Worker / Container process was collected by garbage collector for exceeding 5m 15s.
+    Suggested fixes:
+        1. Check for unoptimized dependencies. Check for that by using 'webpack-bundle-analyzer'.
+        2. Use speed measure plugin (speed-measure-plugin) to find what the bottleneck is.
