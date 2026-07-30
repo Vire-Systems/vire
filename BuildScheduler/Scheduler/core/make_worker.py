@@ -8,30 +8,37 @@ from BuildScheduler.Scheduler.manage_worker.create_worker import create_worker_p
 from shared.errors.scheduler_errors import NoJobStateError
 from shared.event_handling.handler import dispatch_event
 from shared.events.events import LogEvent
+from shared.state_transition import transition_job_state
 
 
 async def scheduler_create_worker(job_uuid: str) -> None:
     try:
-        job_data = await read.fetch_build_data(job_uuid)
-        if not job_data:
-            raise NoJobStateError()
-        await dispatch_event(
-            event=LogEvent(
-                job_uuid=job_uuid,
-                diag_code="VC-I-WORKER_STARTED",
-                severity="info",
-                summary="A worker process started.",
-                source="scheduler",
-                exception_name=None,
-                internal_log=None,
+
+        async with transition_job_state(
+            on_enter=None,
+            on_exit=None,
+            on_error="crashed",
+            state_updater=update.update_job_status,
+            job_uuid=job_uuid
+        ):
+            job_data = await read.fetch_build_data(job_uuid)
+            if job_data is None:
+                raise NoJobStateError()
+
+            await dispatch_event(
+                event=LogEvent(
+                    job_uuid=job_uuid,
+                    diag_code="VC-I-WORKER_STARTED",
+                    severity="info",
+                    summary="A worker process started.",
+                    source="scheduler",
+                    exception_name=None,
+                    internal_log=None,
+                )
             )
-        )
-        await create_worker_process(job_data)
+            await create_worker_process(job_data)
 
     except NoJobStateError as e:
-        await update.update_job_status(
-            job_uuid, status_msg="failed", error_code=e.error_code
-        )
         await dispatch_event(
             event=LogEvent(
                 job_uuid=job_uuid,
@@ -55,7 +62,4 @@ async def scheduler_create_worker(job_uuid: str) -> None:
                 exception_name=type(e).__name__,
                 internal_log=None,
             )
-        )
-        await update.update_job_status(
-            job_uuid, status_msg="crashed", error_code="VC-SC=001"
         )
