@@ -55,7 +55,7 @@ def setup_creation(worker_context: WorkerContext) -> tuple[str, str]:
         clone_and_cd = f"{clone} && {cd}"
         base = f"{clone_and_cd} && {checkout}"
 
-        if worker_context.install_req:
+        if worker_context.install_req is True:
             install_cmd = framework_adapter.install_command[
                 worker_context.package_manager
             ]
@@ -82,7 +82,7 @@ async def container_create(worker_context: WorkerContext) -> None:
         expires_at = int(time.time() + worker_config.CONTAINER_EXPIRY)
         image, cmd_body = setup_creation(worker_context=worker_context)
 
-        if not image or not cmd_body:
+        if (not image) or (not cmd_body):
             raise ContainerCreationFail(
                 error_title="Creation of the isolated environment failed."
             )

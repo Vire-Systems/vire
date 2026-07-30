@@ -32,7 +32,7 @@ def _format_report(
     """
     format data based on heading and data.
     """
-    if not data:
+    if data is None:
         return []
 
     if isinstance(data, Mapping):

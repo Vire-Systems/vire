@@ -25,7 +25,7 @@ async def fetch_build_data(job_uuid: str) -> WorkerCreationParams | None:
         query = select(BuildData).where(BuildData.job_uuid == job_uuid)
         result = await session.execute(query)
         build_data_obj: BuildData | None = result.scalar_one_or_none()
-        if build_data_obj:
+        if build_data_obj is not None:
             data_obj = WorkerCreationParams(
                 job_uuid=build_data_obj.job_uuid,
                 user_uuid=build_data_obj.user_uuid,

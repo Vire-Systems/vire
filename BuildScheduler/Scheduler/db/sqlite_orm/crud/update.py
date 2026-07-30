@@ -19,7 +19,6 @@ async def update_job_status(
         "queued", "running", "crashed", "finished", "cancelled", "failed", "timed_out"
     ],
     error_code: str | None = None,
-    PID: int | None = None,
 ) -> None:
     """
     CRUD function for updating job status in BuildState table.
@@ -33,15 +32,13 @@ async def update_job_status(
                 query = select(BuildState).where((BuildState.job_uuid == job_uuid))
                 result = await session.execute(query)
                 job_state = result.scalar_one_or_none()
-                if not job_state:
+                if job_state is None:
                     raise scheduler_errors.NoJobStateError(
                         error_title=f"Tried to fetch job state for job_uuid {job_uuid}. But returned Null."
                     )
 
-                if error_code:
+                if error_code is not None:
                     job_state.error = error_code
-                if PID:
-                    job_state.pid = PID
 
                 job_state.status = status_msg
                 job_state.finished_at = func.now()

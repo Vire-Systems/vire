@@ -25,7 +25,7 @@ async def register_build(BRM: BuildRequestModel) -> bool:
             commit_id=BRM.commit_id,
         )
         validated_toml = await validate_details(VC=validator_context)
-        if not validated_toml:
+        if validated_toml is None:
             await register_job_with_redis(BRM, "failed")
             return False
 

@@ -85,13 +85,14 @@ async def validate_toml(
             error_title="The framework provided ({framework}) is either unsupported or invalid."
         )
 
-    if lockfile_name:
+    if lockfile_name is not None:
         if lockfile_matrix.get(lockfile_name) != package_manager:
             raise validation_errors.PackageManagerException(
                 error_title=f"The lockfile ('{lockfile_name}') fetched by Vire does not match the Lockfile associated with the package manager ('{package_manager}') provided in your vire.toml."
             )
 
     allowed = re.fullmatch(r"[a-zA-Z0-9_-]+", output_dir)
+    # I'm using inversion (not) because its more readable than `if allowed is None`
     if not allowed:
         raise validation_errors.InvalidOutDirError(
             error_title=f"The output directory ({output_dir}) is not allowed. Only alphanumeric, hyphens and underscore characters are allowed."

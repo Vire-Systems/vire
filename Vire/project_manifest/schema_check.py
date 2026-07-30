@@ -31,14 +31,14 @@ async def check_toml_schema(toml_dict: dict) -> ParsedTOMLObject:
     try:
         output_str = ""
         details: dict[str, str] | None = toml_dict.get("details")
-        if not details:
+        if details is None:
             raise InvalidVireTomlError(error_title="[details] table not found.")
 
         framework = details.get("framework")
         package_manager = details.get("package_manager")
 
         project: dict[str, str] | None = toml_dict.get("project")
-        if not project:
+        if project is None:
             raise InvalidVireTomlError(error_title="[project] table not found")
 
         output_dir: str = project.get("output_dir")

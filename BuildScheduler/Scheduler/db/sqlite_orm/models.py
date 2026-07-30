@@ -57,7 +57,6 @@ class BuildState(Base):
     job_uuid: Mapped[str] = mapped_column(String, nullable=False, primary_key=True)
     user_uuid: Mapped[str] = mapped_column(String, nullable=False)
     status: Mapped[str] = mapped_column(String, nullable=False)
-    pid: Mapped[int] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         TIMESTAMP, nullable=False, server_default=func.now()
     )

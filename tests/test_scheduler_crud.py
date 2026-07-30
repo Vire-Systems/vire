@@ -9,7 +9,7 @@ Covers:
   - create.register_build_state — inserts into BuildState
   - read.fetch_build_data — returns WorkerCreationParams for known job_uuid
   - read.load_queued_builds — puts queued job_uuids into the asyncio Queue
-  - update.update_job_status — updates status, pid, error, finished_at
+  - update.update_job_status — updates status, error, finished_at
 
 External dependencies patched:
   - shared.logging.scheduler_logger.vire_logger  (logging I/O)
@@ -183,7 +183,6 @@ class TestRegisterBuildState:
         assert row.status == "queued"
         assert row.user_uuid == user_uuid
         assert row.error is None
-        assert row.pid is None
 
 
 # ── read tests ────────────────────────────────────────────────────────────────
@@ -331,7 +330,7 @@ class TestUpdateJobStatus:
         await self._seed_state(session_factory, job_uuid, user_uuid, status="queued")
 
         with crud_session_patch(session_factory):
-            await update_job_status(job_uuid=job_uuid, status_msg="running", PID=12345)
+            await update_job_status(job_uuid=job_uuid, status_msg="running")
 
         async with session_factory() as session:
             result = await session.execute(
@@ -340,7 +339,6 @@ class TestUpdateJobStatus:
             row = result.scalar_one_or_none()
 
         assert row.status == "running"
-        assert row.pid == 12345
 
     @pytest.mark.asyncio
     async def test_status_updated_to_finished(self, session_factory, job_uuid, user_uuid):
@@ -450,8 +448,7 @@ class TestSchedulerDbLifecycle:
             assert wcp is not None
             assert wcp.framework == "vite"
 
-            # Step 3: Scheduler marks job as running with a PID
-            await update_job_status(job_uuid=job_uuid, status_msg="running", PID=99999)
+            await update_job_status(job_uuid=job_uuid, status_msg="running")
 
             # Step 4: Worker finishes and marks as finished
             await update_job_status(job_uuid=job_uuid, status_msg="finished")
@@ -464,4 +461,3 @@ class TestSchedulerDbLifecycle:
             row = result.scalar_one_or_none()
 
         assert row.status == "finished"
-        assert row.pid == 99999
