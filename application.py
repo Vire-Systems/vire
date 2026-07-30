@@ -29,7 +29,7 @@ async def lifespan(app: FastAPI):
         yield
     finally:
         vire_logger("info", "[Vire Core] shutting down.")
-        if not async_requests.client:
+        if async_requests.client is None:
             vire_logger(
                 "info", "[async req setup] No client found. Ignoring aclose()..."
             )

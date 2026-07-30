@@ -57,7 +57,7 @@ async def validate_details(VC: ValidatorContext) -> ParsedTOMLObject | None:
         # Main logic -
         # Fetch and parse toml
         toml_data: ParsedTOMLObject | None = await fetch_and_parse_toml(VC=VC)
-        if not toml_data:
+        if toml_data is None:
             return
 
         # Lockfile validation
@@ -69,7 +69,7 @@ async def validate_details(VC: ValidatorContext) -> ParsedTOMLObject | None:
         )
 
         lockfile_name = await fetch_and_validate_lockfile(LVP=lockfile_params, VC=VC)
-        if not lockfile_name:
+        if lockfile_name is None:
             return
 
         # Validate toml
@@ -77,11 +77,11 @@ async def validate_details(VC: ValidatorContext) -> ParsedTOMLObject | None:
             lockfile_name=lockfile_name, common_line=common_line, ts=ts()
         )
 
-        if not await validate_vire_toml(TVP=validate_data_obj, VC=VC, PTO=toml_data):
+        if await validate_vire_toml(TVP=validate_data_obj, VC=VC, PTO=toml_data) is None:
             return
 
         # fetch and validate package.json
-        if not await fetch_and_validate_pkgjson(VC=VC):
+        if await fetch_and_validate_pkgjson(VC=VC) is None:
             return
 
         return toml_data

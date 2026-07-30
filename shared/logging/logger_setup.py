@@ -39,5 +39,5 @@ def setup_async_logging(log_file: str, log_level: int = logging.INFO):
 def stop_async_logging():
     """Stops async logging."""
     global Listener
-    if Listener:
+    if Listener is not None:
         Listener.stop()

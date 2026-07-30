@@ -31,7 +31,6 @@ def make_buildstate_table(db_path: str) -> None:
             job_uuid VARCHAR NOT NULL,
             user_uuid VARCHAR NOT NULL,
             status VARCHAR NOT NULL,
-            pid INTEGER,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
             finished_at TIMESTAMP,
             error VARCHAR,

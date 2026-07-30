@@ -10,7 +10,7 @@ async def get_user_uuid(job_uuid: str) -> str | None:
         cursor = await db.execute(query, (job_uuid,))
 
         user_uuid = await cursor.fetchone()
-        if not user_uuid:
+        if user_uuid is None:
             return None
         return user_uuid[0]
 
@@ -26,10 +26,10 @@ async def update_job_status(
         _ = await db.execute("PRAGMA busy_timeout=5000")
 
         # Main logic
-        if not error_code:
+        if error_code is None:
             query = f"UPDATE BuildState SET status=? WHERE job_uuid IN ({placeholders})"
             _ = await db.execute(query, (status, *job_uuids))
-        if error_code:
+        else:
             query = f"UPDATE BuildState SET status=?, error=? WHERE job_uuid IN ({placeholders})"
             _ = await db.execute(query, (status, error_code, *job_uuids))
 

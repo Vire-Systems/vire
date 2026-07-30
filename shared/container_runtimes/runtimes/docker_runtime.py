@@ -182,7 +182,7 @@ class DockerRuntime(ContainerRuntime):
 
             async def return_async_generator() -> AsyncGenerator[str, None]:
                 for container in raw_container_list:
-                    if not container.name:
+                    if container.name is None:
                         continue
                     yield container.name
 

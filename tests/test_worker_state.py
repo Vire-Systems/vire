@@ -34,7 +34,6 @@ def make_db_with_schema(db_path: str) -> None:
             job_uuid TEXT PRIMARY KEY,
             user_uuid TEXT NOT NULL,
             status TEXT NOT NULL,
-            pid INTEGER,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             finished_at TIMESTAMP,
             error TEXT
