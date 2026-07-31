@@ -6,8 +6,6 @@ Functions -
 1. check_toml_schema
 """
 
-from typing import Any
-
 from shared.event_handling.handler import dispatch_event
 from shared.events.events import LogEvent
 from Vire.objects.validation_models import ParsedTOMLObject

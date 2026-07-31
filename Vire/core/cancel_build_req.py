@@ -9,15 +9,22 @@ from shared.errors.container_runtime_errors import (
 from shared.event_handling.handler import dispatch_event
 from shared.events.events import LogEvent
 from shared.shared_state import shared_config
+from shared.state_transition import transition_job_state
 
 
-async def terminate_worker(job_uuid: str):
+async def terminate_worker(job_uuid: str)-> None:
+    """
+    Cancel a job.
+    """
     try:
-        runtime = RUNTIME_REGISTRY[shared_config.CONTAINER_RUNTIME]()
+        async with transition_job_state(
+            on_exit = "cancelled", on_enter=None, on_error=None,
+            state_updater = update.update_job_status,
+            job_uuid = job_uuid
+        ):
+            runtime = RUNTIME_REGISTRY[shared_config.CONTAINER_RUNTIME]()
+            await asyncio.to_thread(runtime.remove, job_uuid=job_uuid)
 
-        await update.update_job_status(job_uuid=job_uuid, status_msg="cancelled")
-
-        await asyncio.to_thread(runtime.remove, job_uuid=job_uuid)
     except (ContainerAdapterAPIError, ContainerNotFound) as e:
         await dispatch_event(
             event=LogEvent(
@@ -27,7 +34,7 @@ async def terminate_worker(job_uuid: str):
                 internal_log="Unexpected error occured while deleting a container (Exception)",
                 summary=e.error_title,
                 exception_name=str(type(e).__name__),
-                source="gc",
+                source="vire",
             )
         )
 
