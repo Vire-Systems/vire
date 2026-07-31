@@ -206,7 +206,7 @@ class TestUpdateJobState:
 
         with patch("BuildScheduler.worker.resolve_worker_state.worker_config") as mock_cfg:
             mock_cfg.DB_FILE = temp_db
-            update_job_state(job_uuid=job_uuid, status="running", prev_status="queued")
+            update_job_state(job_uuid=job_uuid, status_msg="running", prev_status="queued")
 
         assert fetch_raw_status(temp_db, job_uuid) == "running"
 
@@ -217,7 +217,7 @@ class TestUpdateJobState:
 
         with patch("BuildScheduler.worker.resolve_worker_state.worker_config") as mock_cfg:
             mock_cfg.DB_FILE = temp_db
-            update_job_state(job_uuid=job_uuid, status="finished", prev_status="running")
+            update_job_state(job_uuid=job_uuid, status_msg="finished", prev_status="running")
 
         assert fetch_raw_status(temp_db, job_uuid) == "finished"
 
@@ -228,7 +228,7 @@ class TestUpdateJobState:
 
         with patch("BuildScheduler.worker.resolve_worker_state.worker_config") as mock_cfg:
             mock_cfg.DB_FILE = temp_db
-            update_job_state(job_uuid=job_uuid, status="crashed", prev_status="running")
+            update_job_state(job_uuid=job_uuid, status_msg="crashed", prev_status="running")
 
         assert fetch_raw_status(temp_db, job_uuid) == "crashed"
 
@@ -242,7 +242,7 @@ class TestUpdateJobState:
 
         with patch("BuildScheduler.worker.resolve_worker_state.worker_config") as mock_cfg:
             mock_cfg.DB_FILE = temp_db
-            update_job_state(job_uuid=job_uuid, status="running", prev_status="finished")
+            update_job_state(job_uuid=job_uuid, status_msg="running", prev_status="finished")
 
         # Status must remain "finished"
         assert fetch_raw_status(temp_db, job_uuid) == "finished"
@@ -256,7 +256,7 @@ class TestUpdateJobState:
 
         with patch("BuildScheduler.worker.resolve_worker_state.worker_config") as mock_cfg:
             mock_cfg.DB_FILE = temp_db
-            update_job_state(job_uuid=job_uuid, status="cancelled", prev_status="crashed")
+            update_job_state(job_uuid=job_uuid, status_msg="cancelled", prev_status="crashed")
 
         assert fetch_raw_status(temp_db, job_uuid) == "crashed"
 
@@ -274,7 +274,7 @@ class TestUpdateJobState:
 
         with patch("BuildScheduler.worker.resolve_worker_state.worker_config") as mock_cfg:
             mock_cfg.DB_FILE = temp_db
-            update_job_state(job_uuid=job_uuid, status="finished", prev_status="queued")
+            update_job_state(job_uuid=job_uuid, status_msg="finished", prev_status="queued")
 
         # The DB status must remain "running" since WHERE job_uuid=? AND status="queued" matched nothing
         assert fetch_raw_status(temp_db, job_uuid) == "running"
@@ -302,14 +302,14 @@ class TestWorkerStateLifecycle:
             # Worker starts up: queued → running
             current = fetch_job_status(job_uuid, user_uuid)
             assert current == "queued"
-            update_job_state(job_uuid, status="running", prev_status=current)
+            update_job_state(job_uuid, status_msg="running", prev_status=current)
 
             # Mid-work
             current = fetch_job_status(job_uuid, user_uuid)
             assert current == "running"
 
             # Worker completes: running → finished
-            update_job_state(job_uuid, status="finished", prev_status=current)
+            update_job_state(job_uuid, status_msg="finished", prev_status=current)
 
         final_status = fetch_raw_status(temp_db, job_uuid)
         assert final_status == "finished"
@@ -326,10 +326,10 @@ class TestWorkerStateLifecycle:
             mock_cfg.DB_FILE = temp_db
 
             current = fetch_job_status(job_uuid, user_uuid)
-            update_job_state(job_uuid, status="running", prev_status=current)
+            update_job_state(job_uuid, status_msg="running", prev_status=current)
 
             current = fetch_job_status(job_uuid, user_uuid)
-            update_job_state(job_uuid, status="crashed", prev_status=current)
+            update_job_state(job_uuid, status_msg="crashed", prev_status=current)
 
         final = fetch_raw_status(temp_db, job_uuid)
         assert final == "crashed"
