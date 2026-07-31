@@ -8,6 +8,7 @@ import os
 from dotenv import load_dotenv
 
 
+
 _ = load_dotenv("/home/vire/vire/.env")
 
 from BuildScheduler.worker.cli_parser import load_parser
@@ -22,11 +23,15 @@ from BuildScheduler.worker.utils.state import worker_config
 
 from shared.container_runtimes.base_runtime import ContainerRuntime
 from shared.container_runtimes.runtime_registry import RUNTIME_REGISTRY
+
 from shared.errors.container_runtime_errors import OutputDirNotFound
 from shared.errors.worker_errors import CredentialError
+
 from shared.event_handling.handler import dispatch_event
 from shared.events.events import LogEvent
 from shared.events.error_event import ErrorEvent
+
+from shared.state_transition import transition_job_state
 
 runtime: ContainerRuntime = RUNTIME_REGISTRY[worker_config.CONTAINER_RUNTIME]()
 
@@ -87,8 +92,13 @@ async def complete_final_tasks(worker_context: WorkerContext):
 async def main(worker_context: WorkerContext):
     job_uuid = worker_context.job_uuid
     try:
-        await container_create(worker_context)
-        await complete_final_tasks(worker_context=worker_context)
+        async with transition_job_state(
+            on_enter=None, on_error="crashed", on_exit=None,
+            state_updater = update_job_state,
+            job_uuid = job_uuid, prev_status = "running"
+        ):
+            await container_create(worker_context)
+            await complete_final_tasks(worker_context=worker_context)
 
     except Exception as e:
         await dispatch_event(
@@ -104,7 +114,6 @@ async def main(worker_context: WorkerContext):
                 propagate_state=True,
             )
         )
-        update_job_state(job_uuid, prev_status="running", status="crashed")
 
 
 def init() -> WorkerContext:

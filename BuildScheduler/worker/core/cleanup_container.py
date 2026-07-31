@@ -16,6 +16,7 @@ from shared.errors.container_runtime_errors import (
 )
 from shared.events.events import LogEvent
 from shared.event_handling.handler import dispatch_event
+from shared.state_transition import transition_job_state
 
 from shared.container_runtimes.base_runtime import ContainerRuntime
 from shared.container_runtimes.runtime_registry import RUNTIME_REGISTRY
@@ -24,8 +25,13 @@ from shared.container_runtimes.runtime_registry import RUNTIME_REGISTRY
 async def remove_container(worker_context: WorkerContext):
     """Name (UUID4 used for naming) based container remover"""
     try:
-        runtime: ContainerRuntime = RUNTIME_REGISTRY[worker_config.CONTAINER_RUNTIME]()
-        runtime.remove(worker_context.job_uuid)
+        async with transition_job_state(
+            on_enter= None, on_error= "finished", on_exit = "finished",
+            state_updater = update_job_state,
+            job_uuid=worker_context.job_uuid, prev_status="running"
+        ):
+            runtime: ContainerRuntime = RUNTIME_REGISTRY[worker_config.CONTAINER_RUNTIME]()
+            runtime.remove(worker_context.job_uuid)
 
     except (ContainerAdapterAPIError, ContainerNotFound) as e:
         await dispatch_event(
@@ -57,8 +63,3 @@ async def remove_container(worker_context: WorkerContext):
 
     except Exception:
         raise
-
-    finally:
-        update_job_state(
-            job_uuid=worker_context.job_uuid, status="finished", prev_status="running"
-        )

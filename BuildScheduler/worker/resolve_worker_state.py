@@ -44,12 +44,12 @@ def fetch_job_status(job_uuid: str, user_uuid: str) -> str:
 
 def update_job_state(
     job_uuid: str,
-    status: Literal["queued", "running", "crashed", "finished", "cancelled"],
+    status_msg: Literal["queued", "running", "crashed", "finished", "cancelled"],
     prev_status: Literal["queued", "running", "crashed", "finished", "cancelled"],
 ) -> None:
     allowed_updates: list[str] = status_update_allowlist[prev_status]
 
-    if status not in allowed_updates:
+    if status_msg not in allowed_updates:
         return
 
     with db_session(worker_config.DB_FILE) as conn:
@@ -60,4 +60,4 @@ def update_job_state(
             WHERE
             job_uuid=? AND status=?
             """
-        _ = cursor.execute(query, (status, job_uuid, prev_status))
+        _ = cursor.execute(query, (status_msg, job_uuid, prev_status))

@@ -58,7 +58,7 @@ async def process_build_request(build_request_model: BuildRequestModel):
                 diag_code="VC-IN-UNEXPECTED_INTERNAL_ERROR",
                 severity="critical",
                 summary="Build Request endpoint raised an unexpected error.",
-                source="Vire",
+                source="vire",
                 exception_name=type(e).__name__,
                 internal_log=None,
             )
