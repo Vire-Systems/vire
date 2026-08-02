@@ -46,18 +46,23 @@ def update_job_state(
     job_uuid: str,
     status_msg: Literal["queued", "running", "crashed", "finished", "cancelled"],
     prev_status: Literal["queued", "running", "crashed", "finished", "cancelled"],
+    error_code: str | None = None,
 ) -> None:
     allowed_updates: list[str] = status_update_allowlist[prev_status]
 
     if status_msg not in allowed_updates:
         return
 
+    finished_at = 'CURRENT_TIMESTAMP' if status_msg == "finished" else None
+
     with db_session(worker_config.DB_FILE) as conn:
         cursor = conn.cursor()
         query = """
             UPDATE BuildState
-            SET status=?
+            SET status=?, error=?, finished_at=?
             WHERE
             job_uuid=? AND status=?
             """
-        _ = cursor.execute(query, (status_msg, job_uuid, prev_status))
+        _ = cursor.execute(query,
+            (status_msg, error_code, finished_at, job_uuid, prev_status)
+        )
