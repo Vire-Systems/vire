@@ -2,21 +2,21 @@
 This module handles orchestrating the fetch and validation process for the lockfile from data provided when requesting a build.
 
 Functions -
-    1. fetch_and_validate_lockfile
+    1. validate_lockfile
 """
 
 from shared.event_handling.handler import dispatch_event
 from shared.events.error_event import ErrorEvent
-from shared.shared_state import package_managers_list
+from shared.shared_state import lockfile_matrix, package_managers_list
 
 from shared.errors import validation_errors, vire_errors as errors
 from Vire.objects.validation_models import LockfileValidationParams, ValidatorContext
-from Vire.core.core_utils.fetch_lockfile import fetch_lockfile_name
 
 
-async def fetch_and_validate_lockfile(
+async def validate_lockfile(
     LVP: LockfileValidationParams,
     VC: ValidatorContext,
+    lockfile_names: list[str]
 ) -> str | None:
     """
     Fetch and validate lockfile against a matrix of supported package managers.
@@ -31,21 +31,23 @@ async def fetch_and_validate_lockfile(
 
     # Main logic
     try:
-        if LVP.install_req:
-            if LVP.package_manager not in package_managers_list:
-                raise validation_errors.PackageManagerException()
+        inverted_dict = {v: k for k, v in lockfile_matrix.items()}
 
-            lockfile_name = await fetch_lockfile_name(
-                username=VC.remote_user,
-                reponame=VC.remote_reponame,
-                provider=VC.provider,
-                commit_id=LVP.commit_id,
-                pm=LVP.package_manager,
+        expected_lockfile_name = inverted_dict.get(LVP.package_manager)
+
+        if not LVP.install_req:
+            return None
+
+        if LVP.package_manager not in package_managers_list:
+            raise validation_errors.PackageManagerException()
+
+        if not expected_lockfile_name in lockfile_names:
+            raise validation_errors.PackageManagerException(
+                error_title= f"Expected lockfile ({expected_lockfile_name}) not found.",
+                notes=(f"Expected {LVP.package_manager}'s lockfile ({expected_lockfile_name}).",)
             )
-        else:
-            return
 
-        return lockfile_name
+        return expected_lockfile_name
 
     # Exception handling
     except (
@@ -61,5 +63,6 @@ async def fetch_and_validate_lockfile(
                 "Commit SHA": VC.commit_id,
                 "Branch Name": VC.branch,
                 "PM provided": LVP.package_manager,
+                "Lockfile(s)" : ', '.join(lockfile_names)
             },
         )

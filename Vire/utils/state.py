@@ -3,12 +3,11 @@ import logging
 from pathlib import Path
 
 # Available frameworks
-available_frameworks_str = os.getenv("AVAILABLE_FRAMEWORKS")
-assert available_frameworks_str is not None
+available_frameworks_str = os.environ["AVAILABLE_FRAMEWORKS"]
 available_frameworks: set[str] = set(available_frameworks_str.lower().split(","))
 
 # Redis
-redis_url = os.getenv("REDIS_URL")
+redis_url = os.environ["REDIS_URL"]
 assert redis_url is not None
 
 # Logfile

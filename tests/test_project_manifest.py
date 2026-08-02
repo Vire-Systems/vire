@@ -6,10 +6,10 @@ Covers:
   - schema_check.check_toml_schema (valid schema / missing keys / missing tables)
   - validator.validate_package_json (blocked keys / clean json / malformed json)
   - validator.validate_toml (framework / lockfile / output_dir validation)
-  - fetch_parse_toml.fetch_and_parse_toml (toml fetch + parse in one flow)
-  - validate_lockfile.fetch_and_validate_lockfile (pm validation + lockfile fetch)
+  - parse_vire_toml.parse_vire_toml (toml fetch + parse in one flow)
+  - validate_lockfile.validate_lockfile (pm validation + lockfile fetch)
   - validate_vire_toml.validate_vire_toml (passes valid PTO / raises on bad toml)
-  - resolve_packagejson.fetch_and_validate_pkgjson (passes valid / fails on blocked keys)
+  - resolve_packagejson.validate_pkgjson (passes valid / fails on blocked keys)
 
 External dependencies patched:
   - Vire.core.core_utils.fetch_buildreq.send_request   (HTTP calls)
@@ -413,11 +413,11 @@ class TestValidateToml:
         )
 
 
-# ─── fetch_and_parse_toml integration tests ──────────────────────────────────
+# ─── parse_vire_toml integration tests ──────────────────────────────────
 
 class TestFetchAndParseToml:
     """
-    fetch_and_parse_toml fetches vire.toml via HTTP then parses it.
+    parse_vire_toml fetches vire.toml via HTTP then parses it.
 
     HTTP call is mocked; we verify the parsing pipeline is exercised end-to-end.
     """
@@ -430,8 +430,9 @@ class TestFetchAndParseToml:
 
     @pytest.mark.asyncio
     async def test_valid_toml_returns_parsed_toml_object(self):
-        from Vire.core.validate.fetch_parse_toml import fetch_and_parse_toml
+        from Vire.core.validate.parse_vire_toml import parse_vire_toml
         from Vire.objects.validation_models import ParsedTOMLObject
+        from Vire.core.core_utils.fetch_buildreq import fetch_vire_toml
 
         vc = make_validator_context()
         mock_resp = self._make_mock_response(VALID_TOML)
@@ -439,7 +440,15 @@ class TestFetchAndParseToml:
         with patch(PATCH_REQUEST, new_callable=AsyncMock, return_value=mock_resp), \
              patch(PATCH_LOGGER), \
              patch(PATCH_REDIS, new_callable=AsyncMock):
-            result = await fetch_and_parse_toml(VC=vc)
+             vire_toml_str = await fetch_vire_toml(
+                 provider=vc.provider,
+                 remote_user=vc.remote_user,
+                 remote_reponame=vc.remote_reponame,
+                 branch=vc.branch,
+             )
+             print(vire_toml_str)
+             
+             result = await parse_vire_toml(VC=vc, vire_toml_str=vire_toml_str)
 
         assert isinstance(result, ParsedTOMLObject)
         assert result.framework == "vite"
@@ -447,10 +456,11 @@ class TestFetchAndParseToml:
     @pytest.mark.asyncio
     async def test_invalid_toml_syntax_returns_none_and_dispatches_event(self):
         """
-        When the fetched file is malformed TOML, fetch_and_parse_toml catches
+        When the fetched file is malformed TOML, parse_vire_toml catches
         InvalidTomlSyntaxError, dispatches an ErrorEvent, and returns None.
         """
-        from Vire.core.validate.fetch_parse_toml import fetch_and_parse_toml
+        from Vire.core.validate.parse_vire_toml import parse_vire_toml
+        from Vire.core.core_utils.fetch_buildreq import fetch_vire_toml
 
         vc = make_validator_context()
         mock_resp = self._make_mock_response(INVALID_TOML_SYNTAX)
@@ -458,8 +468,15 @@ class TestFetchAndParseToml:
         with patch(PATCH_REQUEST, new_callable=AsyncMock, return_value=mock_resp), \
              patch(PATCH_LOGGER), \
              patch(PATCH_REDIS, new_callable=AsyncMock) as mock_redis:
-            result = await fetch_and_parse_toml(vc)
-            print(mock_redis.await_count)
+             vire_toml_str = await fetch_vire_toml(
+                provider=vc.provider,
+                remote_user=vc.remote_user,
+                remote_reponame=vc.remote_reponame,
+                branch=vc.branch,
+             )
+
+             result = await parse_vire_toml(VC=vc, vire_toml_str=vire_toml_str)
+             print(mock_redis.await_count)
 
         # Returns None on validation failure
         assert result is None
@@ -468,32 +485,37 @@ class TestFetchAndParseToml:
 
     @pytest.mark.asyncio
     async def test_missing_schema_returns_none(self):
-        """Valid TOML syntax but missing [details] table → returns None."""
-        from Vire.core.validate.fetch_parse_toml import fetch_and_parse_toml
+        """Valid TOML syntax but missing [details] table → parse_vire_toml only catches
+        InvalidTomlSyntaxError. InvalidVireTomlError (schema error) propagates up to the
+        caller (validate_details), so it raises here."""
+        from Vire.core.validate.parse_vire_toml import parse_vire_toml
+        from shared.errors.validation_errors import InvalidVireTomlError
 
         vc = make_validator_context()
-        mock_resp = self._make_mock_response(MISSING_DETAILS_TOML)
 
-        with patch(PATCH_REQUEST, new_callable=AsyncMock, return_value=mock_resp), \
-             patch(PATCH_LOGGER), \
+        with patch(PATCH_LOGGER), \
              patch(PATCH_REDIS, new_callable=AsyncMock):
-            result = await fetch_and_parse_toml(vc)
-
-        assert result is None
+            with pytest.raises(InvalidVireTomlError):
+                await parse_vire_toml(vc, vire_toml_str=MISSING_DETAILS_TOML)
 
     @pytest.mark.asyncio
-    async def test_unsupported_provider_returns_none(self):
+    async def test_unsupported_provider_raises(self):
         """Unsupported git provider key error → UnsupportedGitProviderError → returns None."""
-        from Vire.core.validate.fetch_parse_toml import fetch_and_parse_toml
+        from Vire.core.validate.parse_vire_toml import parse_vire_toml
+        from Vire.core.core_utils.fetch_buildreq import fetch_vire_toml
+        from shared.errors.vire_errors import UnsupportedGitProviderError
 
         vc = make_validator_context(provider="bitbucket")  # not in PROVIDER_REGISTRY
 
         with patch(PATCH_LOGGER), \
              patch(PATCH_REDIS, new_callable=AsyncMock):
-            result = await fetch_and_parse_toml(vc)
-
-        assert result is None
-
+                 with pytest.raises(UnsupportedGitProviderError):
+                    vire_toml_str = await fetch_vire_toml(
+                        provider=vc.provider,
+                        remote_user=vc.remote_user,
+                        remote_reponame=vc.remote_reponame,
+                        branch=vc.branch,
+                    )
 
 # ─── validate_vire_toml integration tests ────────────────────────────────────
 
@@ -559,11 +581,11 @@ class TestValidateVireToml:
         mock_redis.assert_called()
 
 
-# ─── fetch_and_validate_lockfile integration tests ───────────────────────────
+# ─── validate_lockfile integration tests ───────────────────────────
 
 class TestFetchAndValidateLockfile:
     """
-    fetch_and_validate_lockfile:
+    validate_lockfile:
       - returns lockfile name when install_req=True and lockfile is found.
       - returns None (no fetch) when install_req=False.
       - raises/dispatches on unsupported PM.
@@ -591,7 +613,7 @@ class TestFetchAndValidateLockfile:
 
     @pytest.mark.asyncio
     async def test_install_req_false_returns_none_immediately(self):
-        from Vire.core.validate.validate_lockfile import fetch_and_validate_lockfile
+        from Vire.core.validate.validate_lockfile import validate_lockfile
         from Vire.objects.validation_models import LockfileValidationParams
 
         lvp = LockfileValidationParams(
@@ -603,14 +625,14 @@ class TestFetchAndValidateLockfile:
         vc = make_validator_context()
 
         with patch(PATCH_LOGGER), patch(PATCH_REDIS, new_callable=AsyncMock):
-            result = await fetch_and_validate_lockfile(LVP=lvp, VC=vc)
+            result = await validate_lockfile(LVP=lvp, VC=vc, lockfile_names=["package-lock.json"])
 
-        # install_req=False → returns None without calling any network
+        # install_req=False → returns None without checking lockfile_names
         assert result is None
 
     @pytest.mark.asyncio
     async def test_unsupported_pm_dispatches_event_and_returns_none(self):
-        from Vire.core.validate.validate_lockfile import fetch_and_validate_lockfile
+        from Vire.core.validate.validate_lockfile import validate_lockfile
         from Vire.objects.validation_models import LockfileValidationParams
 
         lvp = LockfileValidationParams(
@@ -623,8 +645,8 @@ class TestFetchAndValidateLockfile:
 
         with patch(PATCH_LOGGER), \
              patch(PATCH_REDIS, new_callable=AsyncMock) as mock_redis:
-            result = await fetch_and_validate_lockfile(
-                LVP=lvp, VC=vc
+            result = await validate_lockfile(
+                LVP=lvp, VC=vc, lockfile_names=["yarn.lock"]
             )
 
         assert result is None
@@ -632,77 +654,60 @@ class TestFetchAndValidateLockfile:
 
     @pytest.mark.asyncio
     async def test_valid_npm_lockfile_found_returns_filename(self):
-        from Vire.core.validate.validate_lockfile import fetch_and_validate_lockfile
+        from Vire.core.validate.validate_lockfile import validate_lockfile
 
         lvp = self._make_lvp(install_req=True, pm="npm")
         vc = make_validator_context()
         mock_resp = self._make_git_tree_response("package-lock.json", "npm")
 
-        with patch(PATCH_REQUEST_LOCKFILE_VALIDATION, new_callable=AsyncMock, return_value=mock_resp), \
-             patch(PATCH_LOGGER), \
+        # validate_lockfile no longer fetches; lockfile_names comes from the caller
+        with patch(PATCH_LOGGER), \
              patch(PATCH_REDIS, new_callable=AsyncMock):
-            result = await fetch_and_validate_lockfile(
-                LVP=lvp, VC=vc
+            result = await validate_lockfile(
+                LVP=lvp, VC=vc, lockfile_names=["package-lock.json", "src/index.ts"]
             )
         assert result == "package-lock.json"
 
     @pytest.mark.asyncio
     async def test_valid_pnpm_lockfile_found_returns_filename(self):
-        from Vire.core.validate.validate_lockfile import fetch_and_validate_lockfile
+        from Vire.core.validate.validate_lockfile import validate_lockfile
 
         lvp = self._make_lvp(install_req=True, pm="pnpm")
         vc = make_validator_context()
         mock_resp = self._make_git_tree_response("pnpm-lock.yaml", "pnpm")
 
-        with patch(PATCH_REQUEST_LOCKFILE_VALIDATION, new_callable=AsyncMock, return_value=mock_resp), \
-             patch(PATCH_LOGGER), \
+        with patch(PATCH_LOGGER), \
              patch(PATCH_REDIS, new_callable=AsyncMock):
-            result = await fetch_and_validate_lockfile(
-                LVP=lvp, VC=vc
+            result = await validate_lockfile(
+                LVP=lvp, VC=vc, lockfile_names=["pnpm-lock.yaml", "src/index.ts"]
             )
 
         assert result == "pnpm-lock.yaml"
 
     @pytest.mark.asyncio
     async def test_no_lockfile_in_tree_dispatches_and_returns_none(self):
-        """When no matching lockfile exists in the git tree, NoLockfileError is raised internally."""
-        from Vire.core.validate.validate_lockfile import fetch_and_validate_lockfile
+        """When no matching lockfile exists in the names list, PackageManagerException is
+        raised internally and caught → dispatches event and returns None."""
+        from Vire.core.validate.validate_lockfile import validate_lockfile
 
         lvp = self._make_lvp(install_req=True, pm="npm")
         vc = make_validator_context()
 
-        # Tree has no lockfile
-        mock_resp = MagicMock()
-        mock_resp.json.return_value = {
-            "tree": [
-                {"path": "src/index.ts", "type": "blob", "size": 200},
-            ]
-        }
-
-        with patch(PATCH_REQUEST, new_callable=AsyncMock, return_value=mock_resp), \
-             patch(PATCH_LOGGER), \
+        # Names list contains no lockfile matching npm's expected 'package-lock.json'
+        with patch(PATCH_LOGGER), \
              patch(PATCH_REDIS, new_callable=AsyncMock) as mock_redis:
-            result = await fetch_and_validate_lockfile(
-                LVP=lvp, VC=vc
+            result = await validate_lockfile(
+                LVP=lvp, VC=vc, lockfile_names=["src/index.ts", "README.md"]
             )
 
-        # NoLockfileError is not in the caught list — it propagates. 
-        # fetch_and_validate_lockfile only catches PackageManagerException,
-        # EmptyLockfileError, RepoFileFetchError, GitProviderAPIError.
-        # NoLockfileError re-raises to validate_details. So result should be None
-        # only if NoLockfileError IS caught. Check actual behavior.
-        # If it propagates, the test verifies that — adjust assertion accordingly.
-        # Based on code review: NoLockfileError is NOT in the except clause →
-        # it propagates up. We assert it raises here.
-        # NOTE: This is intentional design — NoLockfileError is caught by validate_details.
-        # This test documents that behavior.
-        assert result is None or True  # Either raises or returns None — either is valid
+        assert result is None
+        mock_redis.assert_called()
 
 
-# ─── fetch_and_validate_pkgjson integration tests ────────────────────────────
+# ─── validate_pkgjson integration tests ────────────────────────────
 
 class TestFetchAndValidatePkgjson:
-    """fetch_and_validate_pkgjson fetches package.json and validates it."""
+    """validate_pkgjson fetches package.json and validates it."""
 
     def _make_pjvp(self, lockfile_name="package-lock.json"):
         from Vire.objects.validation_models import PkgJSONValidationParams
@@ -721,48 +726,46 @@ class TestFetchAndValidatePkgjson:
 
     @pytest.mark.asyncio
     async def test_clean_package_json_returns_true(self):
-        from Vire.core.validate.resolve_packagejson import fetch_and_validate_pkgjson
+        from Vire.core.validate.resolve_packagejson import validate_pkgjson
 
         vc = make_validator_context()
-        pjvp = self._make_pjvp()
-        mock_resp = self._make_mock_response(CLEAN_PACKAGE_JSON)
 
-        with patch(PATCH_REQUEST, new_callable=AsyncMock, return_value=mock_resp), \
-             patch(PATCH_LOGGER), \
+        # validate_pkgjson no longer fetches; package_json_str is passed directly
+        with patch(PATCH_LOGGER), \
              patch(PATCH_REDIS, new_callable=AsyncMock):
-            result = await fetch_and_validate_pkgjson(VC=vc)
+            result = await validate_pkgjson(VC=vc, package_json_str=CLEAN_PACKAGE_JSON)
 
         assert result is True
 
     @pytest.mark.asyncio
-    async def test_blocked_script_in_package_json_returns_none_and_dispatches(self):
-        from Vire.core.validate.resolve_packagejson import fetch_and_validate_pkgjson
+    async def test_blocked_script_in_package_json_returns_false_and_dispatches(self):
+        from Vire.core.validate.resolve_packagejson import validate_pkgjson
 
         vc = make_validator_context()
-        pjvp = self._make_pjvp()
-        mock_resp = self._make_mock_response(BLOCKED_PACKAGE_JSON)
 
-        with patch(PATCH_REQUEST, new_callable=AsyncMock, return_value=mock_resp), \
-             patch(PATCH_LOGGER), \
+        with patch(PATCH_LOGGER), \
              patch(PATCH_REDIS, new_callable=AsyncMock) as mock_redis:
-            result = await fetch_and_validate_pkgjson(VC=vc)
+            result = await validate_pkgjson(VC=vc, package_json_str=BLOCKED_PACKAGE_JSON)
 
-        assert result is None
+        # Returns False when a blocked script key is detected; event is dispatched
+        assert result is False
         mock_redis.assert_called()
 
     @pytest.mark.asyncio
-    async def test_unsupported_provider_returns_none(self):
-        """KeyError from unsupported provider → UnsupportedGitProviderError → returns None."""
-        from Vire.core.validate.resolve_packagejson import fetch_and_validate_pkgjson
+    async def test_start_script_in_package_json_returns_false_and_dispatches(self):
+        """'start' is a blocked script key → validation fails → returns False and dispatches.
+        This test replaces the former 'unsupported_provider' test; provider lookup was
+        removed from validate_pkgjson in the refactor."""
+        from Vire.core.validate.resolve_packagejson import validate_pkgjson
 
-        vc = make_validator_context(provider="unsupported_provider")
-        pjvp = self._make_pjvp()
+        vc = make_validator_context()
 
         with patch(PATCH_LOGGER), \
-             patch(PATCH_REDIS, new_callable=AsyncMock):
-            result = await fetch_and_validate_pkgjson(VC=vc)
+             patch(PATCH_REDIS, new_callable=AsyncMock) as mock_redis:
+            result = await validate_pkgjson(VC=vc, package_json_str=START_SCRIPT_PACKAGE_JSON)
 
-        assert result is None
+        assert result is False
+        mock_redis.assert_called()
 
 
 # ─── git provider adapter tests ───────────────────────────────────────────────
@@ -800,10 +803,10 @@ class TestGitProviderAdapter:
         from Vire.objects.git_provider_adapter import PROVIDER_REGISTRY
 
         with pytest.raises(KeyError):
-            _ = PROVIDER_REGISTRY["gitlab"]
+            _ = PROVIDER_REGISTRY["gitlab"]()
 
     def test_github_is_in_provider_registry(self):
         from Vire.objects.git_provider_adapter import PROVIDER_REGISTRY, GithubAdapter
 
         assert "github" in PROVIDER_REGISTRY
-        assert isinstance(PROVIDER_REGISTRY["github"], GithubAdapter)
+        assert isinstance(PROVIDER_REGISTRY["github"](), GithubAdapter)

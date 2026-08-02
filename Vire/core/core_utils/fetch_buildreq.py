@@ -18,20 +18,22 @@ async def fetch_vire_toml(
     """
     Fetches vire.toml from 'master' on the provided provider's File content fetching APIs.
 
-    Args -
-        1. provider - The name of the git provider (ex: 'github', 'gitlab', etc)
-        2. remote_user - The username of the build requester. (ex: Vire-Systems in "https://github.com/Vire-Systems/...")
-        3. remote_reponame - The repository name (ex: vire in "https://github.com/Vire-Systems/vire/...")
-        4. path - The path to the req file.
-        5. branch - Latest branch which was pushed.
+    Args:
+    -----
+    1. provider - The name of the git provider (ex: 'github', 'gitlab', etc)
+    2. remote_user - The username given to remote git provider 
+    3. remote_reponame - The remote repository name
+    4. path - The path to the req file.
+    5. branch - Latest branch which was pushed.
 
-    Raises -
-        InvalidBranchError, RepoFileFetchError, UnsupportedGitProviderError
-    Catches -
-        Broad 'Exception'
+    Raises:
+    -------
+    - InvalidBranchError
+    - RepoFileFetchError
+    - UnsupportedGitProviderError
     """
     try:
-        adapter = PROVIDER_REGISTRY[provider]
+        adapter = PROVIDER_REGISTRY[provider]()
         if not branch:
             raise errors.InvalidBranchError
 
@@ -47,10 +49,13 @@ async def fetch_vire_toml(
         raise errors.UnsupportedGitProviderError(
             error_title=f"The Git provider '{provider}' is not supported yet."
         ) from KE
+
     except errors.InvalidBranchError:
         raise
+
     except errors.RepoFileFetchError:
         raise
+
     except Exception:
         raise errors.RepoFileFetchError(
             error_title="While trying to fetch vire.toml, Vire encountered unexpected errors (Internal Error)."
@@ -64,19 +69,23 @@ async def fetch_package_json(
     """
     Fetches package.json from the provided provider's File content fetching APIs.
 
-    Args -
+    Args:
+    -----
 
-        1. provider - The name of the git provider (ex: 'github', 'gitlab', etc)
-        2. remote_user - The username of the build requester. (ex: Vire-Systems in "https://github.com/Vire-Systems/...")
-        3. remote_reponame - The repository name (ex: vire in "https://github.com/Vire-Systems/vire/...")
-        4. path - The path to the req file.
-        5. branch - Latest branch which was pushed.
+    1. provider - The name of the git provider (ex: 'github', 'gitlab', etc)
+    2. remote_user - 
+    3. remote_reponame - The repository name (ex: vire in "https://github.com/Vire-Systems/vire/...")
+    4. path - The path to the req file.
+    5. branch - Latest branch which was pushed.
 
-    Raises -
-        InvalidBranchError, RepoFileFetchError, UnsupportedGitProviderError
+    Raises:
+    -------
+    - InvalidBranchError
+    - RepoFileFetchError
+    - UnsupportedGitProviderError
     """
     try:
-        adapter = PROVIDER_REGISTRY[provider]
+        adapter = PROVIDER_REGISTRY[provider]()
         if not branch:
             raise errors.InvalidBranchError(
                 error_title=f"Provided branch ('{branch}')  is Invalid."

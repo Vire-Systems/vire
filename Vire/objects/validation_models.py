@@ -58,7 +58,7 @@ class TOMLValidationParams:
 @dataclass(frozen=True, slots=True)
 class LockfileValidationParams:
     """
-    A dataclass for the params of the function 'fetch_and_validate_lockfile'.
+    A dataclass for the params of the function 'validate_lockfile'.
 
     Attributes -
         install_req, commit_id, package_manager, provider
@@ -74,7 +74,7 @@ class LockfileValidationParams:
 @dataclass(frozen=True, slots=True)
 class PkgJSONValidationParams:
     """
-    A dataclass for the params of the function 'fetch_and_validate_pkgjson'.
+    A dataclass for the params of the function 'validate_pkgjson'.
 
     Attributes -
         lockfile_name, common_line, ts
@@ -83,3 +83,13 @@ class PkgJSONValidationParams:
     lockfile_name: str | None
     common_line: str
     ts: str
+
+@dataclass(frozen=True, slots=True)
+class IOFetchedContent:
+    """
+    A Dataclass that is used by '`fetch_data_concurrent`' to return data.
+    """
+
+    vire_toml_str: str
+    package_json_str: str
+    lockfile_names: list[str]

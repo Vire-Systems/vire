@@ -24,6 +24,7 @@ dependencies = [
 
 [project.optional-dependencies]
 optional = [
+    "basedpyright>=1.39.9",
     "ruff",
 ]
 dev = [
