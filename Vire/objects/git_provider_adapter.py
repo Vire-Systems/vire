@@ -58,14 +58,13 @@ class GithubAdapter(GitProviderAdapter):
         )
 
     @override
-    def return_clone_link(self, user, repo_name):
+    def return_clone_link(self, user: str, repo_name: str):
         return f"https://github.com/{user}/{repo_name}.git"
 
     @override
-    def return_list_tree(self, user, reponame, commit_id):
+    def return_list_tree(self, user: str, reponame: str, commit_id: str):
         return f"https://api.github.com/repos/{user}/{reponame}/git/trees/{commit_id}"
 
-
-PROVIDER_REGISTRY = {
-    "github": GithubAdapter(),
+PROVIDER_REGISTRY: dict[str, type[GitProviderAdapter]] = {
+    "github": GithubAdapter,
 }
