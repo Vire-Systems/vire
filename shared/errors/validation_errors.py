@@ -99,5 +99,17 @@ class UnsupportedFrameworkError(VireBaseError):
 
     notes: tuple[str, ...] | None = (
         "Try uploading the files in HTML.",
-        "Create a GitHub issue to add a new framework.",
+        "Create a new GitHub feature issue to add a new framework.",
+    )
+
+@dataclass(slots=True, kw_only=True)
+class InvalidIODataError(VireBaseError):
+    """Internal exception for invalid data types"""
+
+    error_title: str = "Data returned by the Git provider or the data parsed by Vire is invalid."
+    error_code: str = "VC-IN-UNEXPECTED_INTERNAL_ERROR"
+    severity: Severity = "critical"
+
+    notes: tuple[str, ...] | None = (
+        "This is an internal error. Create a bug report if you see this.",
     )
