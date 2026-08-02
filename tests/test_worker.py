@@ -21,7 +21,9 @@ def worker_db():
         CREATE TABLE IF NOT EXISTS BuildState (
             job_uuid TEXT,
             user_uuid TEXT,
-            status TEXT
+            status TEXT,
+            error TEXT,
+            finished_at TEXT
         )
     ''')
     cursor.execute('DELETE FROM BuildState')
@@ -42,6 +44,7 @@ PATCH_RUNTIME_CREATE = "shared.container_runtimes.runtimes.docker_runtime.Docker
 PATCH_RUNTIME_LOGS = "shared.container_runtimes.runtimes.docker_runtime.DockerRuntime.get_container_log"
 PATCH_RUNTIME_STREAM = "shared.container_runtimes.runtimes.docker_runtime.DockerRuntime.stream_file"
 PATCH_RUNTIME_REMOVE = "shared.container_runtimes.runtimes.docker_runtime.DockerRuntime.remove"
+
 PATCH_REDIS_PUB = "BuildScheduler.worker.core.create_container_job.publish_log_redis"
 PATCH_DISPATCH_WORKER = "BuildScheduler.worker.worker.dispatch_event"
 PATCH_DISPATCH_CREATE = "BuildScheduler.worker.core.create_container_job.dispatch_event"
@@ -94,20 +97,21 @@ class TestWorkerIntegration:
         """Test worker handles container creation failure and marks job as crashed."""
         
         with patch(PATCH_RUNTIME_CREATE, side_effect=ContainerCreationFail(error_title="Failed to create container")) as mock_create, \
-             patch(PATCH_DISPATCH_CREATE, new_callable=AsyncMock) as mock_dispatch_create, \
              patch(PATCH_DISPATCH_WORKER, new_callable=AsyncMock) as mock_dispatch_worker, \
-             patch(PATCH_RUNTIME_STREAM, side_effect=Exception("No container to stream from")) as mock_stream, \
+             patch(PATCH_RUNTIME_STREAM) as mock_stream, \
              patch(PATCH_RUNTIME_REMOVE) as mock_remove:
              
             await main(sample_worker_context)
             
             mock_create.assert_called_once()
             
-            # Event dispatch gets called twice:
-            # 1. By container_create catching ContainerCreationFail (PATCH_DISPATCH_CREATE)
-            # 2. By main catching Exception when stream_file propagates it up (PATCH_DISPATCH_WORKER)
-            assert mock_dispatch_create.call_count == 1
+            # Since container_create no longer swallows errors, it raises directly to main().
+            # main() catches the error, dispatches the event, and aborts.
             assert mock_dispatch_worker.call_count == 1
+            
+            # complete_final_tasks is skipped, so stream and remove are not called
+            mock_stream.assert_not_called()
+            mock_remove.assert_not_called()
             
             # Check DB status is 'crashed' due to transition_job_state catching Exception
             cursor = worker_db.cursor()
