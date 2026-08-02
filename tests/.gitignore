@@ -1,2 +1,4 @@
 codebase.txt
 ingest_code.py
+.venv
+progress.json

@@ -1,8 +1,9 @@
 """
 This module(async_requests) is an asynchronous set-up for requests (aiohttp). Keeps a pool of connections.
 
-Functions -
-    1. send_request
+Function(s):
+------------
+- send_request
 """
 
 import asyncio
@@ -31,11 +32,13 @@ async def _send_request_helper(client: httpx.AsyncClient, url: str) -> httpx.Res
             response = await client.get(url, timeout=timeout)
             _ = response.raise_for_status()
             return response
+
         except httpx.HTTPStatusError as e:
             status_code = e.response.status_code
             raise errors.RepoFileFetchError(
                 error_title=f"Fetching file (raw url: {url}) failed. Provider's API returned status code : '{status_code}'."
             )
+
         except Exception:
             raise errors.RepoFileFetchError(
                 error_title=f"Fetching file (raw url: {url}) failed. Vire faced unexpected errors while fetching (Internal Error)."
@@ -43,18 +46,28 @@ async def _send_request_helper(client: httpx.AsyncClient, url: str) -> httpx.Res
 
 
 async def send_request(url: str) -> httpx.Response:
-    global client
     """
     Async implementation for requests (using httpx). Performs a GET request on the specified URL.
     
-    Behavior -
-        Works asynchronously using asyncio.Semaphore for limiting max outbound requests. Semaphore blocks until a thread calls release().
-        Uses httpx.Limits to avoid OOM and 100k requests under load (...).
-        Timeout of 3s is used as to not wait for long periods of time.
+    Behavior:
+    ---------
+    - Works asynchronously using asyncio.Semaphore for limiting max outbound requests.
+    - Semaphore blocks until a thread calls release().
+    - Uses httpx.Limits to avoid OOM and 100k requests under load.
+    - Timeout of 5s is used as to not wait for long periods of time.
     
-    Args -
-        client - httpx.AsyncClient, an asynchronous HTTP client with connection pooling, HTTP/2, redirects, cookie persistence, etc.
-        url - The url to perform a GET request on.
+    Args:
+    -----
+    - client - httpx.AsyncClient, an asynchronous HTTP client with connection pooling, HTTP/2, redirects, cookie persistence, etc.
+    - url - The url to perform a GET request on.
+
+    Raises:
+    -------
+    - RepoFileFetchError
     """
-    client = httpx.AsyncClient(limits=limits)
+    global client
+
+    if client is None:
+        client = httpx.AsyncClient(limits=limits)
+
     return await _send_request_helper(client, url)

@@ -31,6 +31,13 @@ import pytest
 # ── Set up required environment variables BEFORE any app imports ───────────────
 # These must be set at module level so state.py files see them during collection.
 
+from unittest.mock import MagicMock
+try:
+    import docker
+    docker.from_env = MagicMock()
+except ImportError:
+    pass
+
 _tmp_dir = tempfile.mkdtemp(prefix="vire_test_")
 
 os.environ.setdefault("CORE_ID", "vire-test-core")
