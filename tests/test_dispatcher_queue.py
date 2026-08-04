@@ -44,13 +44,13 @@ def patch_externals():
 @pytest.fixture(autouse=True)
 def drain_queue():
     """Drain the shared db_build_queue before and after each test."""
-    from BuildScheduler.Scheduler.utils import queues_locks
+    from BuildScheduler.Scheduler.utils import queues
 
-    while not queues_locks.db_build_queue.empty():
-        queues_locks.db_build_queue.get_nowait()
+    while not queues.db_build_queue.empty():
+        queues.db_build_queue.get_nowait()
     yield
-    while not queues_locks.db_build_queue.empty():
-        queues_locks.db_build_queue.get_nowait()
+    while not queues.db_build_queue.empty():
+        queues.db_build_queue.get_nowait()
 
 
 # ── dispatch_queued_job tests ─────────────────────────────────────────────────
@@ -79,12 +79,12 @@ class TestDispatchQueuedJob:
         dispatch_queued_job should remove them from the queue.
         """
         from BuildScheduler.Scheduler.core.dispatch_from_queue import dispatch_queued_job
-        from BuildScheduler.Scheduler.utils import queues_locks
+        from BuildScheduler.Scheduler.utils import queues
 
         # Put 3 jobs in the queue
         job1, job2, job3 = str(uuid.uuid4()), str(uuid.uuid4()), str(uuid.uuid4())
         for j in (job1, job2, job3):
-            await queues_locks.db_build_queue.put(j)
+            await queues.db_build_queue.put(j)
 
         # Mock the worker creation so we don't spawn real processes
         with patch(
@@ -94,17 +94,17 @@ class TestDispatchQueuedJob:
             await dispatch_queued_job(available_slots=3)
 
         # Queue should now be empty
-        assert queues_locks.db_build_queue.empty()
+        assert queues.db_build_queue.empty()
 
     @pytest.mark.asyncio
     async def test_only_consumes_up_to_available_slots(self):
         """With 5 jobs in queue but only 2 slots, only 2 should be consumed."""
         from BuildScheduler.Scheduler.core.dispatch_from_queue import dispatch_queued_job
-        from BuildScheduler.Scheduler.utils import queues_locks
+        from BuildScheduler.Scheduler.utils import queues
 
         jobs = [str(uuid.uuid4()) for _ in range(5)]
         for j in jobs:
-            await queues_locks.db_build_queue.put(j)
+            await queues.db_build_queue.put(j)
 
         with patch(
             "BuildScheduler.Scheduler.core.dispatch_from_queue.scheduler_create_worker",
@@ -114,8 +114,8 @@ class TestDispatchQueuedJob:
 
         # 3 jobs should remain in the queue
         remaining = []
-        while not queues_locks.db_build_queue.empty():
-            remaining.append(queues_locks.db_build_queue.get_nowait())
+        while not queues.db_build_queue.empty():
+            remaining.append(queues.db_build_queue.get_nowait())
 
         assert len(remaining) == 3
 
@@ -123,10 +123,10 @@ class TestDispatchQueuedJob:
     async def test_correct_job_uuids_passed_to_worker_creation(self):
         """Verify scheduler_create_worker is called with the correct job_uuids."""
         from BuildScheduler.Scheduler.core.dispatch_from_queue import dispatch_queued_job
-        from BuildScheduler.Scheduler.utils import queues_locks
+        from BuildScheduler.Scheduler.utils import queues
 
         job1 = str(uuid.uuid4())
-        await queues_locks.db_build_queue.put(job1)
+        await queues.db_build_queue.put(job1)
 
         created_jobs = []
 
@@ -259,19 +259,19 @@ class TestQueueLockPrimitives:
     """Verify the shared asyncio primitives behave as expected."""
 
     def test_db_build_queue_is_asyncio_queue(self):
-        from BuildScheduler.Scheduler.utils.queues_locks import db_build_queue
+        from BuildScheduler.Scheduler.utils.queues import db_build_queue
         assert isinstance(db_build_queue, asyncio.Queue)
 
     def test_scheduler_lock_is_asyncio_lock(self):
-        from BuildScheduler.Scheduler.utils.queues_locks import scheduler_lock
+        from BuildScheduler.Scheduler.utils.mutex_locks import scheduler_lock
         assert isinstance(scheduler_lock, asyncio.Lock)
 
     def test_queue_insert_lock_is_asyncio_lock(self):
-        from BuildScheduler.Scheduler.utils.queues_locks import queue_insert_lock
+        from BuildScheduler.Scheduler.utils.mutex_locks import queue_insert_lock
         assert isinstance(queue_insert_lock, asyncio.Lock)
 
     def test_job_status_locks_creates_new_lock_per_key(self):
-        from BuildScheduler.Scheduler.utils.queues_locks import job_status_locks
+        from BuildScheduler.Scheduler.utils.mutex_locks import job_status_locks
 
         lock1 = job_status_locks["job-aaa"]
         lock2 = job_status_locks["job-bbb"]
@@ -280,7 +280,7 @@ class TestQueueLockPrimitives:
         assert isinstance(lock1, asyncio.Lock)
 
     def test_job_status_locks_same_key_returns_same_lock(self):
-        from BuildScheduler.Scheduler.utils.queues_locks import job_status_locks
+        from BuildScheduler.Scheduler.utils.mutex_locks import job_status_locks
 
         key = str(uuid.uuid4())
         assert job_status_locks[key] is job_status_locks[key]
@@ -288,14 +288,14 @@ class TestQueueLockPrimitives:
     @pytest.mark.asyncio
     async def test_queue_put_and_get_preserve_order(self):
         """The asyncio.Queue is FIFO — items should come out in insertion order."""
-        from BuildScheduler.Scheduler.utils import queues_locks
+        from BuildScheduler.Scheduler.utils import queues
 
         job1, job2, job3 = str(uuid.uuid4()), str(uuid.uuid4()), str(uuid.uuid4())
         for j in (job1, job2, job3):
-            await queues_locks.db_build_queue.put(j)
+            await queues.db_build_queue.put(j)
 
         got = []
         for _ in range(3):
-            got.append(queues_locks.db_build_queue.get_nowait())
+            got.append(queues.db_build_queue.get_nowait())
 
         assert got == [job1, job2, job3]

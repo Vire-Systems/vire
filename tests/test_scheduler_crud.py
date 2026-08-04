@@ -238,7 +238,7 @@ class TestLoadQueuedBuilds:
     async def test_queued_jobs_are_added_to_queue(self, session_factory, user_uuid):
         """Three queued jobs → all three job_uuids appear in the asyncio Queue."""
         from BuildScheduler.Scheduler.db.sqlite_orm.crud.read import load_queued_builds
-        from BuildScheduler.Scheduler.utils import queues_locks
+        from BuildScheduler.Scheduler.utils import queues
 
         job1, job2, job3 = str(uuid.uuid4()), str(uuid.uuid4()), str(uuid.uuid4())
         await self._seed_states(session_factory, [
@@ -248,16 +248,16 @@ class TestLoadQueuedBuilds:
         ])
 
         # Drain the queue first to avoid pollution from other tests
-        while not queues_locks.db_build_queue.empty():
-            queues_locks.db_build_queue.get_nowait()
+        while not queues.db_build_queue.empty():
+            queues.db_build_queue.get_nowait()
 
         with crud_session_patch(session_factory):
             await load_queued_builds(number_of_builds=10)
 
         # Collect everything from the queue
         collected = []
-        while not queues_locks.db_build_queue.empty():
-            collected.append(queues_locks.db_build_queue.get_nowait())
+        while not queues.db_build_queue.empty():
+            collected.append(queues.db_build_queue.get_nowait())
 
         assert set([job1, job2, job3]).issubset(set(collected))
 
@@ -265,20 +265,20 @@ class TestLoadQueuedBuilds:
     async def test_limit_is_respected(self, session_factory, user_uuid):
         """load_queued_builds(2) should add at most 2 items to the queue."""
         from BuildScheduler.Scheduler.db.sqlite_orm.crud.read import load_queued_builds
-        from BuildScheduler.Scheduler.utils import queues_locks
+        from BuildScheduler.Scheduler.utils import queues
 
         jobs = [str(uuid.uuid4()) for _ in range(5)]
         await self._seed_states(session_factory, [(j, user_uuid, "queued") for j in jobs])
 
-        while not queues_locks.db_build_queue.empty():
-            queues_locks.db_build_queue.get_nowait()
+        while not queues.db_build_queue.empty():
+            queues.db_build_queue.get_nowait()
 
         with crud_session_patch(session_factory):
             await load_queued_builds(number_of_builds=2)
 
         count = 0
-        while not queues_locks.db_build_queue.empty():
-            queues_locks.db_build_queue.get_nowait()
+        while not queues.db_build_queue.empty():
+            queues.db_build_queue.get_nowait()
             count += 1
 
         assert count <= 2
@@ -287,7 +287,7 @@ class TestLoadQueuedBuilds:
     async def test_running_jobs_not_added_to_queue(self, session_factory, user_uuid):
         """Only 'queued' status should enter the queue; 'running' should be excluded."""
         from BuildScheduler.Scheduler.db.sqlite_orm.crud.read import load_queued_builds
-        from BuildScheduler.Scheduler.utils import queues_locks
+        from BuildScheduler.Scheduler.utils import queues
 
         queued_job = str(uuid.uuid4())
         running_job = str(uuid.uuid4())
@@ -296,15 +296,15 @@ class TestLoadQueuedBuilds:
             (running_job, user_uuid, "running"),
         ])
 
-        while not queues_locks.db_build_queue.empty():
-            queues_locks.db_build_queue.get_nowait()
+        while not queues.db_build_queue.empty():
+            queues.db_build_queue.get_nowait()
 
         with crud_session_patch(session_factory):
             await load_queued_builds(number_of_builds=10)
 
         collected = []
-        while not queues_locks.db_build_queue.empty():
-            collected.append(queues_locks.db_build_queue.get_nowait())
+        while not queues.db_build_queue.empty():
+            collected.append(queues.db_build_queue.get_nowait())
 
         assert queued_job in collected
         assert running_job not in collected
