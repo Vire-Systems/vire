@@ -1,3 +1,7 @@
+"""
+The state module for scheduler. Initializes SchedulerConfig and other state.
+"""
+
 import os
 import asyncio
 from BuildScheduler.Scheduler.utils.scheduler_dc import SchedulerConfig

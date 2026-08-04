@@ -26,50 +26,44 @@ from shared.state_transition import transition_job_state
 
 # Helper called in delayed_delete
 async def delayed_delete_helper(job_uuid: str, user_uuid: str) -> None:
-    """Sleeps for 300s (state.CONTAINER_REMOVAL_DELAY) and kills the specified container if it's still alive."""
+    """Sleeps for <state.CONTAINER_REMOVAL_DELAY> and kills the specified container if it's still alive."""
     await asyncio.sleep(scheduler_config.CONTAINER_REMOVAL_DELAY)  # in seconds
     try:
         async with transition_job_state(
-            on_enter=None, on_exit="timed_out", on_error=None,
-            state_updater = update_job_status,
-            job_uuid = job_uuid
+            on_enter=None,
+            on_exit="timed_out",
+            on_error=None,
+            state_updater=update_job_status,
+            job_uuid=job_uuid,
         ):
             try:
                 runtime = RUNTIME_REGISTRY[shared_config.CONTAINER_RUNTIME]()
                 await asyncio.to_thread(runtime.remove, job_uuid=job_uuid)
+
             except ContainerNotFound:
-                return
+                raise
+
             await dispatch_event(
                 event=ContainerTimeoutEvent(
                     job_uuid=job_uuid,
                     user_uuid=user_uuid,
-                    summary=f"Container timed out. Timeout delay: {scheduler_config.CONTAINER_REMOVAL_DELAY}s",
+                    summary=f"Container timed out. Timeout delay: {scheduler_config.CONTAINER_REMOVAL_DELAY}s.",
                 )
             )
 
-    except ContainerAdapterAPIError as e:
-        await dispatch_event(
-            LogEvent(
-                job_uuid=job_uuid,
-                diag_code="VC-IN-UNEXPECTED_INTERNAL_ERROR",
-                severity="critical",
-                internal_log="Unexpected error occured while deleting a container (Exception)",
-                summary=e.error_title,
-                exception_name=str(type(e).__name__),
-                source="scheduler",
-            )
-        )
+    except ContainerNotFound:
+        pass  # Worker autocollected its container. It doesn't exist anymore.
 
-    except Exception as e:
+    except (ContainerAdapterAPIError, Exception) as e:
         await dispatch_event(
             event=LogEvent(
                 job_uuid=job_uuid,
                 diag_code="VC-IN-UNEXPECTED_INTERNAL_ERROR",
                 severity="critical",
-                source="scheduler",
                 exception_name=type(e).__name__,
                 summary="Removal of container was unsuccessful",
-                internal_log=None,
+                internal_log= "Unexpected error occured while deleting a container (Exception)",
+                source="scheduler",
             )
         )
 

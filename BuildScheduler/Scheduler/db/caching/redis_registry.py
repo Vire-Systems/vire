@@ -8,6 +8,9 @@ from Vire.models.pydantic_classes import BuildRequestModel
 async def register_job_with_redis(
     BRM: BuildRequestModel, state: Literal["validating", "passed", "failed"]
 ) -> None:
+    """
+    Register the build with Redis key:value cache.
+    """
     async with client as r:
         _ = await r.hset(
             f"job_session:{BRM.user_uuid}/{BRM.job_uuid}",

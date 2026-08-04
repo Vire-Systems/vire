@@ -12,20 +12,27 @@ from shared.event_handling.handler import dispatch_event
 from shared.events.events import LogEvent
 
 
-async def scheduler_iteration(worker_count: int | None) -> None:
+async def scheduler_iteration() -> None:
+    """
+    The singular iteration of the scheduler workflow.
+
+    Intended to be called repeatedly by the '`scheduler_loop`' function.
+    """
+    worker_count = await get_worker_count()
+
     if worker_count is None:
         raise ValueError("worker count is None")
+
     available_slots = scheduler_config.MAX_BUILDS_NUMBER - worker_count
     await read.load_queued_builds(available_slots)
-    _ = asyncio.create_task(dispatch_queued_job(available_slots))
+    _ = await asyncio.create_task(dispatch_queued_job(available_slots))
 
 
 async def scheduler_loop():
     """The main scheduler loop that dispatches queued jobs."""
     try:
         while True:
-            worker_count = await get_worker_count()
-            await scheduler_iteration(worker_count)
+            await scheduler_iteration()
             await asyncio.sleep(30)
 
     except Exception as e:

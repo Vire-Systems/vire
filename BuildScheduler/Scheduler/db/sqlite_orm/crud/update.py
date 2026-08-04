@@ -10,7 +10,7 @@ from sqlalchemy.future import select
 from BuildScheduler.Scheduler.db.sqlite_orm.db import async_session
 from BuildScheduler.Scheduler.db.sqlite_orm.models import BuildState
 from shared.errors import scheduler_errors
-from BuildScheduler.Scheduler.utils.queues_locks import job_status_locks
+from BuildScheduler.Scheduler.utils.mutex_locks import job_status_locks
 
 
 async def update_job_status(
@@ -23,7 +23,9 @@ async def update_job_status(
     """
     CRUD function for updating job status in BuildState table.
 
-    Raises NoJobStateError
+    Raises:
+    -------
+     - NoJobStateError
     """
 
     async with job_status_locks[job_uuid]:
@@ -32,6 +34,7 @@ async def update_job_status(
                 query = select(BuildState).where((BuildState.job_uuid == job_uuid))
                 result = await session.execute(query)
                 job_state = result.scalar_one_or_none()
+
                 if job_state is None:
                     raise scheduler_errors.NoJobStateError(
                         error_title=f"Tried to fetch job state for job_uuid {job_uuid}. But returned Null."

@@ -15,7 +15,9 @@ async def register_build_data(BRM: BuildRequestModel, PTO: ParsedTOMLObject) -> 
     CRUD function for registering a build's data in the local DB.
 
     Args:
-        BRM - Build Request Model, abbrev. The pydantic class
+    -----
+    - BRM: Build Request Model, abbrev. The pydantic class
+    - PTO: Parsed Vire toml object.
     """
     async with async_session() as session:
         async with session.begin():
@@ -40,8 +42,6 @@ async def register_build_state(
 ) -> None:
     """
     CRUD function for registering the build's state into the local DB.
-
-    Note: Use only for queueing, updating status or marking a build as finished.
     """
     async with async_session() as session:
         async with session.begin():

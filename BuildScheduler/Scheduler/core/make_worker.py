@@ -1,5 +1,5 @@
 """
-This module (make_worker) is repsonsible with providing an abstracted function called scheduler_create_worker.
+The module providing an abstracted function called scheduler_create_worker.
 This is made so that the API layer does not mess with fetching raw data, parsing, etc.
 """
 
@@ -11,53 +11,54 @@ from shared.events.events import LogEvent
 from shared.state_transition import transition_job_state
 
 
-async def scheduler_create_worker(job_uuid: str) -> None:
-    try:
+async def _create_helper(job_uuid: str) -> None:
+    """
+    The helper used for creating a worker process.
 
-        async with transition_job_state(
-            on_enter=None,
-            on_exit=None,
-            on_error="crashed",
-            state_updater=update.update_job_status,
-            job_uuid=job_uuid
-        ):
-            job_data = await read.fetch_build_data(job_uuid)
-            if job_data is None:
-                raise NoJobStateError()
+    Raises:
+    ------
+    - NoJobStateError: if job data is '`None`'.
+    - Exceptions (all other errors that might occur)
+    """
+    async with transition_job_state(
+        on_enter=None,
+        on_exit=None,
+        on_error="crashed",
+        state_updater=update.update_job_status,
+        job_uuid=job_uuid,
+    ):
+        job_data = await read.fetch_build_data(job_uuid)
 
-            await dispatch_event(
-                event=LogEvent(
-                    job_uuid=job_uuid,
-                    diag_code="VC-I-WORKER_STARTED",
-                    severity="info",
-                    summary="A worker process started.",
-                    source="scheduler",
-                    exception_name=None,
-                    internal_log=None,
-                )
-            )
-            await create_worker_process(job_data)
+        if job_data is None:
+            raise NoJobStateError()
 
-    except NoJobStateError as e:
         await dispatch_event(
             event=LogEvent(
                 job_uuid=job_uuid,
-                diag_code=e.error_code,
-                summary=e.error_title,
-                severity=e.severity,
-                source="Scheduler",
-                exception_name=type(e).__name__,
+                diag_code="VC-I-WORKER_STARTED",
+                severity="info",
+                summary="A worker process started.",
+                source="scheduler",
+                exception_name=None,
                 internal_log=None,
             )
         )
 
-    except Exception as e:
+        await create_worker_process(job_data)
+
+
+async def scheduler_create_worker(job_uuid: str) -> None:
+    try:
+        await _create_helper(job_uuid)
+
+    except (NoJobStateError, Exception) as e:
+        default = "Unexpected error occured when attempting to make a worker process."
         await dispatch_event(
             event=LogEvent(
                 job_uuid=job_uuid,
-                diag_code="VC-IN-UNEXPECTED_INTERNAL_ERROR",
-                severity="critical",
-                summary="Unexpected error occured when attempting to make a worker process.",
+                diag_code=getattr(e, "error_code", "VC-IN-UNEXPECTED_INTERNAL_ERROR"),
+                severity=getattr(e, "severity", "critical"),
+                summary=getattr(e, "error_title", default),
                 source="scheduler",
                 exception_name=type(e).__name__,
                 internal_log=None,

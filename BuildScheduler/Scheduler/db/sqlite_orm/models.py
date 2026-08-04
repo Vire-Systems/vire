@@ -1,8 +1,9 @@
 """
-This module (models) is responsible foe providing the db schemas and the init function.
+The module responsible for providing the db schemas and the init function.
 
 DB Schema classes -
-    1.
+    1. BuildData
+    2. BuildState
 
 Functions -
     1. init (async)
@@ -10,27 +11,17 @@ Functions -
 
 from datetime import datetime
 
-from sqlalchemy import TIMESTAMP, Boolean, Integer, String, func
+from sqlalchemy import TIMESTAMP, Boolean, String, func
 from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlalchemy.orm import Mapped, mapped_column
 
-from BuildScheduler.Scheduler.db.sqlite_orm.db import Base, engine
+from BuildScheduler.Scheduler.db.sqlite_orm.db import Base, engine # pyright: ignore[reportAny]
 from shared.logging.scheduler_logger import vire_logger
 
 
-class BuildData(Base):
+class BuildData(Base): # pyright: ignore[reportAny]
     """
     The DB schema class for Build request related data.
-
-    Attributes -
-        job_uuid: String,
-        user_uuid: str,
-        remote_link: str,
-        commit_id: str,
-        provider: str,
-        remote_user: str,
-        remote_reponame: str,
-        branch: str
     """
 
     __tablename__: str = "BuildData"
@@ -45,12 +36,9 @@ class BuildData(Base):
     output_dir: Mapped[str] = mapped_column(String, nullable=False)
 
 
-class BuildState(Base):
+class BuildState(Base): # pyright: ignore[reportAny]
     """
-    Table for build states.
-
-    This SQLAlchemy schema handles build states.
-    Only running / queued builds should be present here.
+    This SQLAlchemy table schema handles build states.
     """
 
     __tablename__: str = "BuildState"
@@ -67,5 +55,5 @@ class BuildState(Base):
 async def init_db(engine: AsyncEngine = engine):
     """Initialize the database and start sqlalchemy engine."""
     async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+        await conn.run_sync(Base.metadata.create_all) # pyright: ignore[reportAny]
     vire_logger("info", "Vire state database has started up.")

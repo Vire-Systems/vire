@@ -7,19 +7,12 @@ from sqlalchemy.future import select
 from BuildScheduler.Scheduler.utils.scheduler_dc import WorkerCreationParams
 from BuildScheduler.Scheduler.db.sqlite_orm.models import BuildData, BuildState
 from BuildScheduler.Scheduler.db.sqlite_orm.db import async_session
-from BuildScheduler.Scheduler.utils.queues_locks import (
-    db_build_queue,
-    queue_insert_lock,
-)
-
+from BuildScheduler.Scheduler.utils.mutex_locks import queue_insert_lock
+from BuildScheduler.Scheduler.utils.queues import db_build_queue
 
 async def fetch_build_data(job_uuid: str) -> WorkerCreationParams | None:
     """
     Fetches full details of a build based on job_uuid.
-
-    Returns -
-        WorkerCreationParams if job_uuid is valid
-        Else it returns 'None'.
     """
     async with async_session() as session:
         query = select(BuildData).where(BuildData.job_uuid == job_uuid)
@@ -46,11 +39,12 @@ async def load_queued_builds(number_of_builds: int) -> None:
     """
     crud's read function for fetching builds where the build status is 'queued'.
 
-    Args -
-        number_of_buids - The number of queued functions to fetch from the db.
+    Args:
+    -----
+    - number_of_buids - The number of queued functions to fetch from the db.
 
-    Behavior -
-        Fetches all builds with status = 'queued'. Then puts them into an asyncio.Queue.
+    Behavior:
+    - Fetches all builds with status = 'queued'. Then puts them into an asyncio.Queue.
     """
     async with queue_insert_lock:
         async with async_session() as session:

@@ -44,9 +44,7 @@ async def _wk_helper(WCP: WorkerCreationParams) -> None:
             argument,
         ]
 
-        _ = subprocess.Popen(
-            cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
-        )
+        _ = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
     except Exception:
         raise
@@ -62,37 +60,27 @@ async def create_worker_process(WCP: WorkerCreationParams) -> None:
 
     try:
         async with transition_job_state(
-            on_enter= None, on_exit = "running", on_error="crashed",
-            state_updater = update.update_job_status,
-            job_uuid = WCP.job_uuid
+            on_enter=None,
+            on_exit="running",
+            on_error="crashed",
+            state_updater=update.update_job_status,
+            job_uuid=WCP.job_uuid,
         ):
             _ = await _wk_helper(WCP)
             await delayed_delete(job_uuid=WCP.job_uuid, user_uuid=WCP.user_uuid)
 
-    except NoJobStateError as e:
+    except (NoJobStateError, Exception) as e:
+        internal_log = getattr(e, "summary", "Worker creation failed due to an internal error.")
         await dispatch_event(
+            job_details= {"Commit SHA":WCP.commit_id},
             event=LogEvent(
                 user_uuid=WCP.user_uuid,
                 job_uuid=WCP.job_uuid,
-                diag_code=e.error_code,
-                summary="Failed to create a sandbox for the job.",
-                severity=e.severity,
-                source="Scheduler",
-                exception_name=type(e).__name__,
-                internal_log=e.error_title,
-            )
-        )
-
-    except Exception as e:
-        await dispatch_event(
-            event=LogEvent(
-                user_uuid=WCP.user_uuid,
-                job_uuid=WCP.job_uuid,
-                diag_code="VC-IN-UNEXPECTED_INTERNAL_ERROR",
-                severity="critical",
-                summary="Worker creation failed dueto an internal error.",
+                diag_code= getattr(e, "error_code", "VC-IN-UNEXPECTED_INTERNAL_ERROR"),
+                summary= "Unable to create a worker process. (Internal Error)",
+                severity= getattr(e, "severity", "critical"),
                 source="scheduler",
                 exception_name=type(e).__name__,
-                internal_log="Worker creation failed for the container creation of the job.",
+                internal_log=internal_log,
             )
         )

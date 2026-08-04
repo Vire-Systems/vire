@@ -7,6 +7,9 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True, slots=True)
 class SchedulerConfig:
+    """
+    The immutable config dataclass used by Scheduler.
+    """
     REDIS_URL: str
     SQLITE_DB_PATH: str
     DB_URL: str
@@ -19,10 +22,7 @@ class SchedulerConfig:
 @dataclass(frozen=True, slots=True)
 class WorkerCreationParams:
     """
-    Params for create_worker_process function. Returned with data by CRUD's fetch_worker_data function.
-
-    Attributes -
-        job_uuid, user_uuid, remote, repo_name, framework, pm, install_req, output_dir, commit_id
+    Parameters for '`create_worker_process`' function. Returned with data by CRUD's fetch_worker_data function.
     """
 
     job_uuid: str
