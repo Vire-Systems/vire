@@ -1,19 +1,39 @@
+"""
+The module that provides container deletion functions.
+
+Functions:
+----------
+
+- remove_single_container
+- batch_remove
+"""
+
 import asyncio
 
 from BuildScheduler.GC.core.gc_crud import get_user_uuid, update_job_status
 from BuildScheduler.GC.utils.state import gc_config
+
 from shared.errors.container_runtime_errors import (
     ContainerAdapterAPIError,
     ContainerNotFound,
 )
 from shared.container_runtimes.runtime_dc import RuntimeMetadata
 from shared.container_runtimes.runtime_registry import RUNTIME_REGISTRY
+
 from shared.event_handling.handler import dispatch_event
 from shared.events.events import GCReapEvent, LogEvent
+
 from shared.shared_state import shared_config
 
 
 async def remove_single_container(job_uuid: str) -> None:
+    """
+    Remove a single container.
+
+    Args:
+    -----
+    - job_uuid: The name of the container to remove.
+    """
     try:
         runtime = RUNTIME_REGISTRY[shared_config.CONTAINER_RUNTIME]()
         user_uuid = await get_user_uuid(job_uuid)
@@ -60,14 +80,19 @@ async def remove_single_container(job_uuid: str) -> None:
 
 
 async def batch_remove() -> None:
+    """
+    Remove all expired containers at once.
+    """
     try:
         runtime = RUNTIME_REGISTRY[shared_config.CONTAINER_RUNTIME]()
+
         metadata = RuntimeMetadata(
             managed_by=shared_config.CONTAINER_METADATA["managed_by"], expires_at=None
         )
         expired_jobs = runtime.list_expired_containers(metadata=metadata)
 
         tasks: list[asyncio.Task[None]] = []
+
         async for job_uuid in expired_jobs:
             await update_job_status(
                 [job_uuid async for job_uuid in expired_jobs], error_code="VC-GC-001 "
@@ -79,9 +104,9 @@ async def batch_remove() -> None:
     except Exception as e:
         await dispatch_event(
             LogEvent(
-                diag_code="VC-IN-001",
+                diag_code="VC-IN-UNEXPECTED_INTERNAL_ERROR",
                 severity="critical",
-                internal_log="Unable to collect. Unexpected error (Exception)",
+                internal_log="Unexpected error occured while deleting a container (Exception)",
                 summary="[GC] Unable to remove container process. Unexpected Exception.",
                 exception_name=str(type(e).__name__),
                 source="gc",

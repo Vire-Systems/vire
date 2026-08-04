@@ -1,3 +1,7 @@
+"""
+The general state module that contains the state that GC uses.
+"""
+
 import logging
 import os
 from BuildScheduler.GC.utils.gc_dataclasses import GCConfig

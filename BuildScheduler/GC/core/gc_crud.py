@@ -1,8 +1,15 @@
+"""
+This module provides all of the CRUD operations the GC needs to function properly.
+"""
+
 import aiosqlite
 from BuildScheduler.GC.utils.state import gc_config
 
 
 async def get_user_uuid(job_uuid: str) -> str | None:
+    """
+    Returns the User UUID registered with the provided Job UUID from the DB.
+    """
     async with aiosqlite.connect(gc_config.DB_PATH) as db:
         query = "SELECT user_uuid FROM BuildState WHERE job_uuid=?"
         _ = await db.execute("PRAGMA journal_mode=WAL")
@@ -18,6 +25,16 @@ async def get_user_uuid(job_uuid: str) -> str | None:
 async def update_job_status(
     job_uuids: list[str], status: str = "terminated", error_code: str | None = None
 ) -> None:
+    """
+    Update the status of the jobs provided.
+
+    Args:
+    -----
+
+    - job_uuids: A list of job UUIDs to mark as `<status_msg>`.
+    - status: The status message (default is `'terminated'`)
+    - error_code: The optional error code to be used to mark the reason of termination.
+    """
     async with aiosqlite.connect(gc_config.DB_PATH) as db:
         placeholders = ",".join("?" for _ in job_uuids)
 

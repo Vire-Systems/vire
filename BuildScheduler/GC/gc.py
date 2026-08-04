@@ -1,6 +1,4 @@
-"""
-The main gc.py entrypoint.
-"""
+"""The main gc.py entrypoint."""
 
 import asyncio
 import logging
@@ -22,25 +20,32 @@ logger = logging.getLogger(__name__)
 logfile_location = os.path.join(gc_config.LOGFILE_DIR, "gc.log")
 
 
+async def gc_loop_iteration():
+    """
+    A single iteration of the GC loop.
+    This is intended to be called repeatedly.
+    """
+    try:
+        await batch_remove()
+
+    except Exception as e:
+        await dispatch_event(
+            event=LogEvent(
+                diag_code="VC-IN-001",
+                severity="critical",
+                internal_log="Unexpected error (Exception) when starting the GC loop.",
+                summary="[GC] Unable to collect timed out builds.",
+                exception_name=type(e).__name__,
+                source="gc",
+            )
+        )
+
+
 async def gc_core_loop():
-    """The core GC loop. Asynchronous."""
+    """The asynchronous core GC loop."""
     try:
         while True:
-            try:
-                await batch_remove()
-
-            except Exception as e:
-                await dispatch_event(
-                    event=LogEvent(
-                        diag_code="VC-IN-001",
-                        severity="critical",
-                        internal_log="Unexpected error (Exception) when starting the GC loop.",
-                        summary="[GC] Unable to collect timed out builds.",
-                        exception_name=type(e).__name__,
-                        source="gc",
-                    )
-                )
-
+            await gc_loop_iteration()
             await asyncio.sleep(30)
 
     finally:
